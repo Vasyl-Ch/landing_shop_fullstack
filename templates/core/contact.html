@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Контакты{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+{% include 'components/breadcrumb.html' with breadcrumbs=breadcrumbs %}
+
+<div class="container">
+    <h1>Контакты</h1>
+    
+    <div class="contact-layout">
+        <!-- Contact Form -->
+        <div class="contact-form">
+            <h2>Свяжитесь с нами</h2>
+            <p style="color: var(--color-text-secondary); margin-bottom: var(--spacing-lg);">
+                Заполните форму, и мы свяжемся с вами в ближайшее время
+            </p>
+            
+            <form method="POST" action="{% url 'core:contact' %}" id="contactForm">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="name" class="form-label required">Имя</label>
+                    <input 
+                        type="text" 
+                        name="name" 
+                        id="name" 
+                        class="form-control" 
+                        required
+                        value="{% if user.is_authenticated %}{{ user.get_full_name }}{% endif %}"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="email" class="form-label required">Email</label>
+                    <input 
+                        type="email" 
+                        name="email" 
+                        id="email" 
+                        class="form-control" 
+                        required
+                        value="{% if user.is_authenticated %}{{ user.email }}{% endif %}"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="subject" class="form-label">Тема</label>
+                    <input 
+                        type="text" 
+                        name="subject" 
+                        id="subject" 
+                        class="form-control"
+                        placeholder="Вопрос по заказу, предложение..."
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="message" class="form-label required">Сообщение</label>
+                    <textarea 
+                        name="message" 
+                        id="message" 
+                        class="form-control" 
+                        rows="6"
+                        required
+                        placeholder="Опишите ваш вопрос или предложение..."
+                    ></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg btn-block">
+                    Отправить сообщение
+                </button>
+            </form>
+        </div>
+        
+        <!-- Contact Info -->
+        <div class="contact-info">
+            <h2>Наши контакты</h2>
+            
+            <div class="contact-info-item">
+                <div class="contact-info-icon">📧</div>
+                <div>
+                    <h4 style="margin-bottom: var(--spacing-xs);">Email</h4>
+                    <a href="mailto:support@ecommerce.ru">support@ecommerce.ru</a>
+                </div>
+            </div>
+            
+            <div class="contact-info-item">
+                <div class="contact-info-icon">📞</div>
+                <div>
+                    <h4 style="margin-bottom: var(--spacing-xs);">Телефон</h4>
+                    <a href="tel:+74951234567">+7 (495) 123-45-67</a>
+                    <p style="font-size: 0.875rem; color: var(--color-text-secondary); margin: var(--spacing-xs) 0 0;">
+                        Пн-Пт: 9:00 - 18:00<br>
+                        Сб-Вс: выходной
+                    </p>
+                </div>
+            </div>
+            
+            <div class="contact-info-item">
+                <div class="contact-info-icon">📍</div>
+                <div>
+                    <h4 style="margin-bottom: var(--spacing-xs);">Адрес</h4>
+                    <p style="margin: 0;">
+                        г. Москва, ул. Примерная, д. 1<br>
+                        БЦ "Пример", офис 101
+                    </p>
+                </div>
+            </div>
+            
+            <div class="contact-info-item">
+                <div class="contact-info-icon">💬</div>
+                <div>
+                    <h4 style="margin-bottom: var(--spacing-xs);">Социальные сети</h4>
+                    <div class="social-links">
+                        <a href="#" aria-label="Facebook" style="color: var(--color-text);">FB</a>
+                        <a href="#" aria-label="Instagram" style="color: var(--color-text);">IG</a>
+                        <a href="#" aria-label="Twitter" style="color: var(--color-text);">TW</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: var(--spacing-xl); padding: var(--spacing-lg); background-color: var(--color-bg-secondary); border-radius: var(--radius-md);">
+                <h4 style="margin-bottom: var(--spacing-md);">Часто задаваемые вопросы</h4>
+                <p style="font-size: 0.875rem; color: var(--color-text-secondary); margin: 0;">
+                    Прежде чем писать нам, загляните в раздел FAQ — возможно, там уже есть ответ на ваш вопрос.
+                </p>
+                <a href="#" class="btn btn-sm btn-secondary" style="margin-top: var(--spacing-md);">
+                    Перейти в FAQ
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+document.getElementById('contactForm')?.addEventListener('submit', function(e) {
+    const email = document.getElementById('email').value;
+    const message = document.getElementById('message').value;
+    
+    if (!FormValidator.validateEmail(email)) {
+        e.preventDefault();
+        FormValidator.showError(document.getElementById('email'), 'Введите корректный email');
+        return false;
+    }
+    
+    if (message.length < 10) {
+        e.preventDefault();
+        FormValidator.showError(document.getElementById('message'), 'Сообщение должно содержать минимум 10 символов');
+        return false;
+    }
+});
+</script>
+{% endblock %}

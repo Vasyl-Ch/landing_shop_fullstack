@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Мои заказы{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+{% include 'components/breadcrumb.html' with breadcrumbs=breadcrumbs %}
+
+<div class="container">
+    <h1>Мои заказы</h1>
+    
+    {% if orders %}
+        {% for order in orders %}
+        <div class="order-card">
+            <div class="order-card-header">
+                <div class="order-number">
+                    Заказ #{{ order.order_number }}
+                </div>
+                <span class="order-status {{ order.status }}">
+                    {{ order.get_status_display }}
+                </span>
+            </div>
+            
+            <div class="order-info">
+                <div>
+                    <strong>Дата:</strong> {{ order.created_at|date:"d.m.Y H:i" }}
+                </div>
+                <div>
+                    <strong>Сумма:</strong> ₽{{ order.total|floatformat:0 }}
+                </div>
+            </div>
+            
+            <div class="order-items">
+                {% for item in order.items.all|slice:":3" %}
+                    {{ item.product_name }} × {{ item.quantity }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+                {% if order.items.count > 3 %}
+                    ... (+еще {{ order.items.count|add:"-3" }} товаров)
+                {% endif %}
+            </div>
+            
+            <div class="order-actions">
+                <a href="{% url 'orders:order_detail' order.order_number %}" class="btn btn-primary btn-sm">
+                    Подробнее →
+                </a>
+                
+                {% if order.status == 'pending' or order.status == 'paid' %}
+                <form method="POST" action="{% url 'orders:cancel' order.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary btn-sm" 
+                        onclick="return confirm('Вы уверены, что хотите отменить заказ?');">
+                        Отменить
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}">← Назад</a>
+            {% else %}
+                <span class="disabled">← Назад</span>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <span class="active">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a href="?page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">Вперед →</a>
+            {% else %}
+                <span class="disabled">Вперед →</span>
+            {% endif %}
+        </nav>
+        {% endif %}
+        
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📦</div>
+            <h3 class="empty-state-title">У вас пока нет заказов</h3>
+            <p class="empty-state-description">Оформите первый заказ прямо сейчас</p>
+            <a href="{% url 'products:product_list' %}" class="btn btn-primary">Перейти в каталог</a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+/* Order status colors */
+.order-status.pending { background-color: #FFA500; }
+.order-status.paid { background-color: #28A745; }
+.order-status.failed { background-color: #DC3545; }
+.order-status.cancelled { background-color: #6C757D; }
+.order-status.processing { background-color: #17A2B8; }
+.order-status.shipped { background-color: #007BFF; }
+.order-status.delivered { background-color: #28A745; }
+</style>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Оформление заказа{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+{% include 'components/breadcrumb.html' with breadcrumbs=breadcrumbs %}
+
+<div class="container">
+    <h1>Оформление заказа</h1>
+    
+    {% if cart_items %}
+    <div class="checkout-layout">
+        <!-- Checkout Form -->
+        <div class="checkout-form">
+            <form method="POST" action="{% url 'orders:checkout' %}" id="checkoutForm">
+                {% csrf_token %}
+                
+                <!-- Contact Information -->
+                <div class="checkout-section">
+                    <h2 class="checkout-section-title">Контактная информация</h2>
+                    
+                    <div class="form-group">
+                        <label for="email" class="form-label required">Email</label>
+                        <input type="email" name="email" id="email" class="form-control" 
+                            value="{{ user.email }}" required>
+                        <span class="form-help">На этот адрес придет подтверждение заказа</span>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="first_name" class="form-label required">Имя</label>
+                            <input type="text" name="first_name" id="first_name" class="form-control" 
+                                value="{{ user.first_name }}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="last_name" class="form-label required">Фамилия</label>
+                            <input type="text" name="last_name" id="last_name" class="form-control" 
+                                value="{{ user.last_name }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone" class="form-label required">Телефон</label>
+                        <input type="tel" name="phone" id="phone" class="form-control" 
+                            value="{{ user.phone }}" required placeholder="+7 (___) ___-__-__">
+                    </div>
+                </div>
+                
+                <!-- Delivery Address -->
+                <div class="checkout-section">
+                    <h2 class="checkout-section-title">Адрес доставки</h2>
+                    
+                    <div class="form-group">
+                        <label for="address_line1" class="form-label required">Адрес (строка 1)</label>
+                        <input type="text" name="address_line1" id="address_line1" class="form-control" 
+                            value="{{ initial_data.address_line1 }}" required 
+                            placeholder="Улица, дом, квартира">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="address_line2" class="form-label">Адрес (строка 2)</label>
+                        <input type="text" name="address_line2" id="address_line2" class="form-control" 
+                            value="{{ initial_data.address_line2 }}" 
+                            placeholder="Корпус, подъезд, этаж (необязательно)">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="city" class="form-label required">Город</label>
+                            <input type="text" name="city" id="city" class="form-control" 
+                                value="{{ initial_data.city }}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="state" class="form-label">Регион/Область</label>
+                            <input type="text" name="state" id="state" class="form-control" 
+                                value="{{ initial_data.state }}">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="postal_code" class="form-label required">Почтовый индекс</label>
+                            <input type="text" name="postal_code" id="postal_code" class="form-control" 
+                                value="{{ initial_data.postal_code }}" required 
+                                placeholder="123456">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="country" class="form-label required">Страна</label>
+                            <input type="text" name="country" id="country" class="form-control" 
+                                value="{{ initial_data.country|default:'Россия' }}" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Customer Note -->
+                <div class="checkout-section">
+                    <h2 class="checkout-section-title">Комментарий к заказу</h2>
+                    
+                    <div class="form-group">
+                        <label for="customer_note" class="form-label">Комментарий</label>
+                        <textarea name="customer_note" id="customer_note" class="form-control" 
+                            rows="4" placeholder="Особые пожелания по доставке..."></textarea>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success btn-block btn-lg">
+                    Оформить и перейти к оплате
+                </button>
+            </form>
+        </div>
+        
+        <!-- Order Summary -->
+        <div class="checkout-order">
+            <h3 class="checkout-order-title">Ваш заказ</h3>
+            
+            {% for item in cart_items %}
+            <div class="checkout-order-item">
+                <div class="checkout-order-product">
+                    {{ item.product.name }} × {{ item.quantity }}
+                </div>
+                <div class="checkout-order-price">
+                    ₽{{ item.get_total_price|floatformat:0 }}
+                </div>
+            </div>
+            {% endfor %}
+            
+            <hr style="margin: var(--spacing-lg) 0; border: none; border-top: 1px solid var(--color-border);">
+            
+            <div class="checkout-order-item">
+                <div class="checkout-order-product">Подытог:</div>
+                <div class="checkout-order-price">₽{{ total_price|floatformat:0 }}</div>
+            </div>
+            
+            <div class="checkout-order-item">
+                <div class="checkout-order-product">Доставка:</div>
+                <div class="checkout-order-price">
+                    {% if total_price >= 3000 %}
+                        Бесплатно
+                    {% else %}
+                        ₽500
+                    {% endif %}
+                </div>
+            </div>
+            
+            <hr style="margin: var(--spacing-lg) 0; border: none; border-top: 2px solid var(--color-border);">
+            
+            <div class="checkout-order-item" style="font-size: 1.25rem; font-weight: 700;">
+                <div class="checkout-order-product">ИТОГО:</div>
+                <div class="checkout-order-price" style="color: var(--color-primary);">
+                    {% if total_price >= 3000 %}
+                        ₽{{ total_price|floatformat:0 }}
+                    {% else %}
+                        ₽{{ total_price|add:500|floatformat:0 }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- Empty Cart -->
+    <div class="empty-state">
+        <div class="empty-state-icon">🛒</div>
+        <h3 class="empty-state-title">Корзина пуста</h3>
+        <p class="empty-state-description">Добавьте товары перед оформлением заказа</p>
+        <a href="{% url 'products:product_list' %}" class="btn btn-primary">Перейти в каталог</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Form validation
+document.getElementById('checkoutForm')?.addEventListener('submit', function(e) {
+    const email = document.getElementById('email').value;
+    const phone = document.getElementById('phone').value;
+    
+    if (!FormValidator.validateEmail(email)) {
+        e.preventDefault();
+        FormValidator.showError(document.getElementById('email'), 'Введите корректный email');
+        return false;
+    }
+    
+    if (!FormValidator.validatePhone(phone)) {
+        e.preventDefault();
+        FormValidator.showError(document.getElementById('phone'), 'Введите корректный номер телефона');
+        return false;
+    }
+});
+
+// Phone mask
+document.getElementById('phone')?.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.slice(0, 11);
+    
+    if (value.length > 0) {
+        let formatted = '+7';
+        if (value.length > 1) formatted += ' (' + value.slice(1, 4);
+        if (value.length >= 4) formatted += ') ' + value.slice(4, 7);
+        if (value.length >= 7) formatted += '-' + value.slice(7, 9);
+        if (value.length >= 9) formatted += '-' + value.slice(9, 11);
+        e.target.value = formatted;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Редактировать профиль{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+{% include 'components/breadcrumb.html' with breadcrumbs=breadcrumbs %}
+
+<div class="container">
+    <h1>Редактировать профиль</h1>
+    
+    <div style="max-width: 800px; margin: 0 auto;">
+        <div class="profile-section">
+            <form method="POST" action="{% url 'users:profile_edit' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Avatar -->
+                <div class="form-group">
+                    <label class="form-label">Фото профиля</label>
+                    
+                    {% if form.instance.avatar %}
+                    <div style="margin-bottom: var(--spacing-md);">
+                        <img src="{{ form.instance.avatar.url }}" alt="Avatar" 
+                            style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover;">
+                    </div>
+                    {% endif %}
+                    
+                    {{ form.avatar }}
+                    {% if form.avatar.errors %}
+                        {% for error in form.avatar.errors %}
+                        <span class="form-error">{{ error }}</span>
+                        {% endfor %}
+                    {% else %}
+                    <span class="form-help">Рекомендуемый размер: 300x300px</span>
+                    {% endif %}
+                </div>
+                
+                <hr style="margin: var(--spacing-xl) 0;">
+                
+                <!-- Address -->
+                <h3 style="margin-bottom: var(--spacing-lg);">Адрес доставки</h3>
+                
+                <div class="form-group">
+                    <label for="address_line1" class="form-label">Адрес (строка 1)</label>
+                    <input 
+                        type="text" 
+                        name="address_line1" 
+                        id="address_line1" 
+                        class="form-control {% if form.address_line1.errors %}error{% endif %}" 
+                        value="{{ form.address_line1.value|default:'' }}"
+                        placeholder="Улица, дом, квартира"
+                    >
+                    {% if form.address_line1.errors %}
+                        {% for error in form.address_line1.errors %}
+                        <span class="form-error">{{ error }}</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="address_line2" class="form-label">Адрес (строка 2)</label>
+                    <input 
+                        type="text" 
+                        name="address_line2" 
+                        id="address_line2" 
+                        class="form-control {% if form.address_line2.errors %}error{% endif %}" 
+                        value="{{ form.address_line2.value|default:'' }}"
+                        placeholder="Корпус, подъезд, этаж (необязательно)"
+                    >
+                    {% if form.address_line2.errors %}
+                        {% for error in form.address_line2.errors %}
+                        <span class="form-error">{{ error }}</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="city" class="form-label">Город</label>
+                        <input 
+                            type="text" 
+                            name="city" 
+                            id="city" 
+                            class="form-control {% if form.city.errors %}error{% endif %}" 
+                            value="{{ form.city.value|default:'' }}"
+                        >
+                        {% if form.city.errors %}
+                            {% for error in form.city.errors %}
+                            <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="state" class="form-label">Регион/Область</label>
+                        <input 
+                            type="text" 
+                            name="state" 
+                            id="state" 
+                            class="form-control {% if form.state.errors %}error{% endif %}" 
+                            value="{{ form.state.value|default:'' }}"
+                        >
+                        {% if form.state.errors %}
+                            {% for error in form.state.errors %}
+                            <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="postal_code" class="form-label">Почтовый индекс</label>
+                        <input 
+                            type="text" 
+                            name="postal_code" 
+                            id="postal_code" 
+                            class="form-control {% if form.postal_code.errors %}error{% endif %}" 
+                            value="{{ form.postal_code.value|default:'' }}"
+                            placeholder="123456"
+                        >
+                        {% if form.postal_code.errors %}
+                            {% for error in form.postal_code.errors %}
+                            <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="country" class="form-label">Страна</label>
+                        <input 
+                            type="text" 
+                            name="country" 
+                            id="country" 
+                            class="form-control {% if form.country.errors %}error{% endif %}" 
+                            value="{{ form.country.value|default:'Россия' }}"
+                        >
+                        {% if form.country.errors %}
+                            {% for error in form.country.errors %}
+                            <span class="form-error">{{ error }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <hr style="margin: var(--spacing-xl) 0;">
+                
+                <!-- Additional Info -->
+                <h3 style="margin-bottom: var(--spacing-lg);">Дополнительно</h3>
+                
+                <div class="form-group">
+                    <label for="date_of_birth" class="form-label">Дата рождения</label>
+                    <input 
+                        type="date" 
+                        name="date_of_birth" 
+                        id="date_of_birth" 
+                        class="form-control {% if form.date_of_birth.errors %}error{% endif %}" 
+                        value="{{ form.date_of_birth.value|date:'Y-m-d'|default:'' }}"
+                    >
+                    {% if form.date_of_birth.errors %}
+                        {% for error in form.date_of_birth.errors %}
+                        <span class="form-error">{{ error }}</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <!-- Actions -->
+                <div style="display: flex; gap: var(--spacing-md); margin-top: var(--spacing-xl);">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        Сохранить изменения
+                    </button>
+                    <a href="{% url 'users:profile' %}" class="btn btn-secondary btn-lg">
+                        Отмена
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

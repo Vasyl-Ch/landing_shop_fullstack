@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Заказ #{{ order.order_number }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+{% include 'components/breadcrumb.html' with breadcrumbs=breadcrumbs %}
+
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-xl);">
+        <h1>Заказ #{{ order.order_number }}</h1>
+        <span class="order-status {{ order.status }}">{{ order.get_status_display }}</span>
+    </div>
+    
+    <div style="background-color: var(--color-bg-secondary); padding: var(--spacing-md); border-radius: var(--radius-sm); margin-bottom: var(--spacing-xl);">
+        <p style="margin: 0;">
+            <strong>Дата создания:</strong> {{ order.created_at|date:"d.m.Y H:i" }}
+            {% if order.paid_at %}
+            | <strong>Оплачен:</strong> {{ order.paid_at|date:"d.m.Y H:i" }}
+            {% endif %}
+        </p>
+    </div>
+    
+    <!-- Order Info Grid -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-xl); margin-bottom: var(--spacing-xl);">
+        <div class="profile-section">
+            <h3 class="profile-section-title">Информация о заказе</h3>
+            <div class="product-meta">
+                <div class="product-meta-item">
+                    <span class="product-meta-label">Контакт:</span>
+                    <span>{{ order.get_full_name }}</span>
+                </div>
+                <div class="product-meta-item">
+                    <span class="product-meta-label">Email:</span>
+                    <span><a href="mailto:{{ order.email }}">{{ order.email }}</a></span>
+                </div>
+                <div class="product-meta-item">
+                    <span class="product-meta-label">Телефон:</span>
+                    <span><a href="tel:{{ order.phone }}">{{ order.phone }}</a></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="profile-section">
+            <h3 class="profile-section-title">Доставка</h3>
+            <div class="product-meta">
+                <div class="product-meta-item">
+                    <span class="product-meta-label">Адрес:</span>
+                    <span>{{ order.get_full_address }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Order Items -->
+    <div class="profile-section">
+        <h3 class="profile-section-title">Товары в заказе</h3>
+        
+        {% for item in order.items.all %}
+        <div class="cart-item" style="border-bottom: 1px solid var(--color-border); padding-bottom: var(--spacing-lg); margin-bottom: var(--spacing-lg);">
+            <div class="order-item-image">
+                {% if item.product.image %}
+                    <img src="{{ item.product.image.url }}" alt="{{ item.product_name }}">
+                {% else %}
+                    <div class="order-no-image">Нет фото</div>
+                {% endif %}
+            </div>
+
+            <div class="cart-item-details">
+                {% if item.product %}
+                <a href="{% url 'products:product_detail' item.product.slug %}" class="cart-item-name">
+                    {{ item.product_name }}
+                </a>
+                {% else %}
+                <div class="cart-item-name">{{ item.product_name }}</div>
+                {% endif %}
+                <div class="cart-item-price">
+                    ₽{{ item.product_price|floatformat:0 }} × {{ item.quantity }}
+                </div>
+            </div>
+
+            <div class="cart-item-total">
+                ₽{{ item.total_price|floatformat:0 }}
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Order Total -->
+        <div style="max-width: 400px; margin-left: auto;">
+            <div class="cart-summary-row">
+                <span class="cart-summary-label">Сумма товаров:</span>
+                <span class="cart-summary-value">₽{{ order.subtotal|floatformat:0 }}</span>
+            </div>
+
+            <div class="cart-summary-row">
+                <span class="cart-summary-label">Доставка:</span>
+                <span class="cart-summary-value">
+                    {% if order.shipping_cost > 0 %}
+                        ₽{{ order.shipping_cost|floatformat:0 }}
+                    {% else %}
+                        Бесплатно
+                    {% endif %}
+                </span>
+            </div>
+
+            <hr style="margin: var(--spacing-md) 0;">
+
+            <div class="cart-summary-row cart-summary-total">
+                <span class="cart-summary-label">ИТОГО:</span>
+                <span class="cart-summary-value">₽{{ order.total|floatformat:0 }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Note -->
+    {% if order.customer_note %}
+    <div class="profile-section">
+        <h3 class="profile-section-title">Комментарий клиента</h3>
+        <p>{{ order.customer_note }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Status History -->
+    {% if order.status_history.all %}
+    <div class="profile-section">
+        <h3 class="profile-section-title">История статусов</h3>
+
+        {% for history in order.status_history.all %}
+        <div style="padding: var(--spacing-md); background-color: var(--color-bg-secondary); border-radius: var(--radius-sm); margin-bottom: var(--spacing-sm);">
+            <div style="font-size: 0.875rem; color: var(--color-text-secondary); margin-bottom: var(--spacing-xs);">
+                {{ history.created_at|date:"d.m.Y H:i" }}
+                {% if history.changed_by %}
+                    | {{ history.changed_by.get_full_name }}
+                {% endif %}
+            </div>
+            <div>
+                <strong>{{ history.get_old_status_display }}</strong> → <strong>{{ history.get_new_status_display }}</strong>
+            </div>
+            {% if history.note %}
+            <div style="margin-top: var(--spacing-xs);">{{ history.note }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div style="display: flex; gap: var(--spacing-md); margin-top: var(--spacing-xl);">
+        <a href="{% url 'orders:order_list' %}" class="btn btn-secondary">
+            ← Вернуться к заказам
+        </a>
+
+        {% if order.status == 'pending' %}
+        <a href="{% url 'payments:create_checkout' order.id %}" class="btn btn-success">
+            Оплатить заказ
+        </a>
+        {% endif %}
+
+        {% if order.status == 'pending' or order.status == 'paid' %}
+        <form method="POST" action="{% url 'orders:cancel' order.id %}" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger"
+                onclick="return confirm('Вы уверены, что хотите отменить заказ?');">
+                Отменить заказ
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Order status colors */
+.order-status {
+    display: inline-block;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    color: white;
+}
+.order-status.pending { background-color: #FFA500; }
+.order-status.paid { background-color: #28A745; }
+.order-status.failed { background-color: #DC3545; }
+.order-status.cancelled { background-color: #6C757D; }
+.order-status.processing { background-color: #17A2B8; }
+.order-status.shipped { background-color: #007BFF; }
+.order-status.delivered { background-color: #28A745; }
+
+@media (max-width: 767px) {
+    div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+{% endblock %}

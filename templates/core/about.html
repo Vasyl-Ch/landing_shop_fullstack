@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}О нас{% endblock %}
+
+{% block content %}
+  <!-- Breadcrumb -->
+  {% include 'components/breadcrumb.html' with breadcrumbs=breadcrumbs %}
+
+  <div class="container">
+    <h1>О нас</h1>
+
+    <div class="section">
+      <div style="max-width: 800px; margin: 0 auto;">
+        <div class="profile-section">
+          <h2 class="profile-section-title">Наша история</h2>
+          <p>
+            E-Commerce Store — это современный интернет-магазин, основанный в 2026 году.
+            Мы специализируемся на продаже качественных товаров по доступным ценам.
+          </p>
+          <p>
+            Наша миссия — сделать онлайн-покупки простыми, быстрыми и приятными для каждого клиента.
+          </p>
+        </div>
+
+        <div class="profile-section">
+          <h2 class="profile-section-title">Наши ценности</h2>
+          <div
+              style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--spacing-lg);">
+            <div style="text-align: center; padding: var(--spacing-lg);">
+              <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">🎯</div>
+              <h3 style="margin-bottom: var(--spacing-sm);">Качество</h3>
+              <p style="color: var(--color-text-secondary); margin: 0;">
+                Мы работаем только с проверенными поставщиками
+              </p>
+            </div>
+
+            <div style="text-align: center; padding: var(--spacing-lg);">
+              <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">⚡</div>
+              <h3 style="margin-bottom: var(--spacing-sm);">Скорость</h3>
+              <p style="color: var(--color-text-secondary); margin: 0;">
+                Быстрая обработка и доставка заказов
+              </p>
+            </div>
+
+            <div style="text-align: center; padding: var(--spacing-lg);">
+              <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">💰</div>
+              <h3 style="margin-bottom: var(--spacing-sm);">Цены</h3>
+              <p style="color: var(--color-text-secondary); margin: 0;">
+                Честные цены без скрытых платежей
+              </p>
+            </div>
+
+            <div style="text-align: center; padding: var(--spacing-lg);">
+              <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">🤝</div>
+              <h3 style="margin-bottom: var(--spacing-sm);">Поддержка</h3>
+              <p style="color: var(--color-text-secondary); margin: 0;">
+                Всегда готовы помочь нашим клиентам
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-section">
+          <h2 class="profile-section-title">Преимущества</h2>
+          <ul style="list-style: none; padding: 0;">
+            <li style="padding: var(--spacing-md) 0; border-bottom: 1px solid var(--color-border);">
+              <strong>✓ Бесплатная доставка</strong> при заказе от ₽3,000
+            </li>
+            <li style="padding: var(--spacing-md) 0; border-bottom: 1px solid var(--color-border);">
+              <strong>✓ Гарантия качества</strong> на все товары
+            </li>
+            <li style="padding: var(--spacing-md) 0; border-bottom: 1px solid var(--color-border);">
+              <strong>✓ Возврат в течение 14 дней</strong> без объяснения причин
+            </li>
+            <li style="padding: var(--spacing-md) 0; border-bottom: 1px solid var(--color-border);">
+              <strong>✓ Безопасная оплата</strong> через проверенные платежные системы
+            </li>
+            <li style="padding: var(--spacing-md) 0;">
+              <strong>✓ Отслеживание заказов</strong> в реальном времени
+            </li>
+          </ul>
+        </div>
+
+        <div class="profile-section">
+          <h2 class="profile-section-title">Наша команда</h2>
+          <p>
+            Наша команда состоит из опытных специалистов, которые работают над тем,
+            чтобы каждая покупка была для вас максимально комфортной.
+          </p>
+          <p>
+            Мы постоянно развиваемся и улучшаем наш сервис, прислушиваясь к отзывам клиентов.
+          </p>
+        </div>
+
+        <div style="text-align: center; margin-top: var(--spacing-xxl);">
+          <h3 style="margin-bottom: var(--spacing-lg);">Остались вопросы?</h3>
+          <a href="{% url 'core:contact' %}" class="btn btn-primary btn-lg">
+            Свяжитесь с нами
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

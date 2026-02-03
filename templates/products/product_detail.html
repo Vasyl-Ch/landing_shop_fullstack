@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+{% include 'components/breadcrumb.html' with breadcrumbs=breadcrumbs %}
+
+<div class="container product-detail">
+    <div class="product-detail-layout">
+        <!-- Product Gallery -->
+        <div class="product-gallery">
+            <div class="product-main-image" id="mainImage">
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" id="mainImageImg">
+                {% else %}
+                    <div class="product-no-image-large">Изображение товара отсутствует</div>
+                {% endif %}
+            </div>
+
+            {% if product.images.all %}
+            <div class="product-thumbnails">
+                <div class="product-thumbnail active" data-image="{{ product.image.url }}">
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                </div>
+                {% for image in product.images.all %}
+                <div class="product-thumbnail" data-image="{{ image.image.url }}">
+                    <img src="{{ image.image.url }}" alt="{{ image.alt_text }}">
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Product Info -->
+        <div class="product-info">
+            <div class="product-info-header">
+                <h1 class="product-info-title">{{ product.name }}</h1>
+                <p class="product-info-category">
+                    Категория: <a href="{% url 'products:category_detail' product.category.slug %}">{{ product.category.name }}</a>
+                </p>
+            </div>
+
+            <div class="product-price-box">
+                <div class="product-price-current">₽{{ product.price|floatformat:0 }}</div>
+                {% if product.compare_price %}
+                <div class="product-price-comparison">
+                    <span class="product-price-old">₽{{ product.compare_price|floatformat:0 }}</span>
+                    <span class="product-discount">Скидка {{ product.get_discount_percentage }}%</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="product-availability">
+                <div class="availability-status {% if product.is_in_stock %}in-stock{% else %}out-of-stock{% endif %}">
+                    {% if product.is_in_stock %}
+                        ✓ В наличии
+                    {% elif product.allow_backorder %}
+                        ⚠ Предзаказ
+                    {% else %}
+                        ✗ Нет в наличии
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if product.is_in_stock or product.allow_backorder %}
+            <form method="POST" action="#" class="product-add-to-cart add-to-cart-form" data-product-id="{{ product.id }}">
+                {% csrf_token %}
+                <div class="product-quantity">
+                    <label for="quantity">Количество:</label>
+                    <div class="quantity-input">
+                        <button type="button" class="quantity-btn" data-action="decrease">−</button>
+                        <input type="number" name="quantity" class="quantity-value" value="1" min="1" max="99" id="quantity">
+                        <button type="button" class="quantity-btn" data-action="increase">+</button>
+                    </div>
+                </div>
+
+                <input type="hidden" name="product_id" value="{{ product.id }}">
+
+                <button type="button" class="btn btn-success btn-block btn-lg add-to-cart-btn" data-product-id="{{ product.id }}">
+                    🛒 Добавить в корзину
+                </button>
+            </form>
+            {% endif %}
+
+            <div class="product-meta">
+                {% if product.weight %}
+                <div class="product-meta-item">
+                    <span class="product-meta-label">Вес:</span>
+                    <span>{{ product.weight }} кг</span>
+                </div>
+                {% endif %}
+                <div class="product-meta-item">
+                    <span class="product-meta-label">Артикул:</span>
+                    <span>{{ product.id }}</span>
+                </div>
+                <div class="product-meta-item">
+                    <span class="product-meta-label">Добавлен:</span>
+                    <span>{{ product.created_at|date:"d.m.Y" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Tabs -->
+    <div class="product-tabs">
+        <div class="tabs-nav">
+            <button class="tab-button active" data-tab="description">Описание</button>
+            <button class="tab-button" data-tab="specifications">Характеристики</button>
+            <button class="tab-button" data-tab="reviews">Отзывы</button>
+        </div>
+
+        <div class="tab-content active" id="description">
+            <div class="product-description">
+                {{ product.description|linebreaks }}
+            </div>
+        </div>
+
+        <div class="tab-content" id="specifications">
+            <div class="product-description">
+                <h3>Характеристики товара</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="border-bottom: 1px solid var(--color-border);">
+                        <td style="padding: 12px 0; font-weight: 600;">Название</td>
+                        <td style="padding: 12px 0;">{{ product.name }}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--color-border);">
+                        <td style="padding: 12px 0; font-weight: 600;">Категория</td>
+                        <td style="padding: 12px 0;">{{ product.category.name }}</td>
+                    </tr>
+                    {% if product.weight %}
+                    <tr style="border-bottom: 1px solid var(--color-border);">
+                        <td style="padding: 12px 0; font-weight: 600;">Вес</td>
+                        <td style="padding: 12px 0;">{{ product.weight }} кг</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+
+        <div class="tab-content" id="reviews">
+            <div class="product-description">
+                <h3>Отзывы покупателей</h3>
+                <p>Отзывов пока нет. Станьте первым!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    {% if related_products %}
+    <div class="related-products">
+        <h2>Похожие товары</h2>
+        <div class="products-grid">
+            {% for product in related_products %}
+                {% include 'products/components/product_card.html' with product=product %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Product gallery thumbnails
+document.querySelectorAll('.product-thumbnail').forEach(thumb => {
+    thumb.addEventListener('click', function() {
+        const imageUrl = this.dataset.image;
+        document.getElementById('mainImageImg').src = imageUrl;
+
+        document.querySelectorAll('.product-thumbnail').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+// Product tabs
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', function() {
+        const tabId = this.dataset.tab;
+
+        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+        this.classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+    });
+});
+</script>
+{% endblock %}

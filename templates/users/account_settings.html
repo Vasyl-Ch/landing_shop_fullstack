@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Настройки аккаунта{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+{% include 'components/breadcrumb.html' with breadcrumbs=breadcrumbs %}
+
+<div class="container">
+    <h1>Настройки аккаунта</h1>
+    
+    <div style="max-width: 800px; margin: 0 auto;">
+        <!-- Personal Info -->
+        <div class="profile-section">
+            <h2 class="profile-section-title">Личные данные</h2>
+            
+            <form method="POST" action="{% url 'users:account_settings' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_personal_info">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="first_name" class="form-label">Имя</label>
+                        <input 
+                            type="text" 
+                            name="first_name" 
+                            id="first_name" 
+                            class="form-control" 
+                            value="{{ user.first_name }}"
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="last_name" class="form-label">Фамилия</label>
+                        <input 
+                            type="text" 
+                            name="last_name" 
+                            id="last_name" 
+                            class="form-control" 
+                            value="{{ user.last_name }}"
+                        >
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone" class="form-label">Телефон</label>
+                    <input 
+                        type="tel" 
+                        name="phone" 
+                        id="phone" 
+                        class="form-control" 
+                        value="{{ user.phone }}"
+                        placeholder="+7 (___) ___-__-__"
+                    >
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    Сохранить
+                </button>
+            </form>
+        </div>
+        
+        <!-- Change Password -->
+        <div class="profile-section">
+            <h2 class="profile-section-title">Изменить пароль</h2>
+            
+            <form method="POST" action="{% url 'users:account_settings' %}" id="changePasswordForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="change_password">
+                
+                <div class="form-group">
+                    <label for="current_password" class="form-label required">Текущий пароль</label>
+                    <input 
+                        type="password" 
+                        name="current_password" 
+                        id="current_password" 
+                        class="form-control" 
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="new_password1" class="form-label required">Новый пароль</label>
+                    <input 
+                        type="password" 
+                        name="new_password1" 
+                        id="new_password1" 
+                        class="form-control" 
+                        required
+                        minlength="8"
+                    >
+                    <span class="form-help">Минимум 8 символов</span>
+                </div>
+                
+                <div class="form-group">
+                    <label for="new_password2" class="form-label required">Повторите новый пароль</label>
+                    <input 
+                        type="password" 
+                        name="new_password2" 
+                        id="new_password2" 
+                        class="form-control" 
+                        required
+                        minlength="8"
+                    >
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    Изменить пароль
+                </button>
+            </form>
+        </div>
+        
+        <!-- Email Settings -->
+        <div class="profile-section">
+            <h2 class="profile-section-title">Email</h2>
+            
+            <div style="background-color: var(--color-bg-secondary); padding: var(--spacing-lg); border-radius: var(--radius-md); margin-bottom: var(--spacing-md);">
+                <div style="font-weight: 600; margin-bottom: var(--spacing-xs);">Текущий email:</div>
+                <div>{{ user.email }}</div>
+            </div>
+            
+            <p style="color: var(--color-text-secondary); font-size: 0.875rem;">
+                Для изменения email свяжитесь с поддержкой
+            </p>
+        </div>
+        
+        <!-- Danger Zone -->
+        <div class="profile-section">
+            <h2 class="profile-section-title" style="color: var(--color-danger);">Опасная зона</h2>
+            
+            <div style="border: 2px solid var(--color-danger); border-radius: var(--radius-md); padding: var(--spacing-lg);">
+                <h3 style="margin-bottom: var(--spacing-md);">Удалить аккаунт</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--spacing-md);">
+                    После удаления аккаунта все ваши данные будут безвозвратно удалены. 
+                    Это действие нельзя отменить.
+                </p>
+                <button class="btn btn-danger" onclick="confirmDeleteAccount()">
+                    Удалить аккаунт
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Password confirmation validation
+document.getElementById('changePasswordForm')?.addEventListener('submit', function(e) {
+    const password1 = document.getElementById('new_password1').value;
+    const password2 = document.getElementById('new_password2').value;
+    
+    if (password1 !== password2) {
+        e.preventDefault();
+        FormValidator.showError(document.getElementById('new_password2'), 'Пароли не совпадают');
+        return false;
+    }
+    
+    if (password1.length < 8) {
+        e.preventDefault();
+        FormValidator.showError(document.getElementById('new_password1'), 'Пароль должен содержать минимум 8 символов');
+        return false;
+    }
+});
+
+// Phone mask
+document.getElementById('phone')?.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.slice(0, 11);
+    
+    if (value.length > 0) {
+        let formatted = '+7';
+        if (value.length > 1) formatted += ' (' + value.slice(1, 4);
+        if (value.length >= 4) formatted += ') ' + value.slice(4, 7);
+        if (value.length >= 7) formatted += '-' + value.slice(7, 9);
+        if (value.length >= 9) formatted += '-' + value.slice(9, 11);
+        e.target.value = formatted;
+    }
+});
+
+// Delete account confirmation
+function confirmDeleteAccount() {
+    Modal.confirm(
+        'Удалить аккаунт?',
+        'Вы уверены, что хотите удалить свой аккаунт? Это действие необратимо и все ваши данные будут удалены.',
+        () => {
+            // TODO: Implement account deletion
+            Toast.warning('Функция удаления аккаунта в разработке');
+        }
+    );
+}
+</script>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Каталог товаров{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/products.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+{% include 'components/breadcrumb.html' with breadcrumbs=breadcrumbs %}
+
+<div class="container">
+    <h1>Каталог товаров</h1>
+    
+    <div class="catalog-layout">
+        <!-- Sidebar Filters -->
+        <aside class="catalog-sidebar">
+            <form method="GET" action="{% url 'products:product_list' %}" id="filterForm">
+                <div class="filter-group">
+                    <h3 class="filter-title">Категории</h3>
+                    {% for category in categories %}
+                    <div class="filter-option">
+                        <label>
+                            <input type="checkbox" name="category" value="{{ category.slug }}" 
+                                {% if category.slug in selected_categories %}checked{% endif %}>
+                            {{ category.name }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="filter-group">
+                    <h3 class="filter-title">Цена</h3>
+                    <div class="price-range">
+                        <input type="number" name="price_min" id="priceMin" placeholder="От" min="0" 
+                            value="{{ price_min }}">
+                        <span>—</span>
+                        <input type="number" name="price_max" id="priceMax" placeholder="До" min="0" 
+                            value="{{ price_max }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm btn-block">
+                        Применить
+                    </button>
+                </div>
+                
+                <div class="filter-group">
+                    <h3 class="filter-title">Наличие</h3>
+                    <div class="filter-option">
+                        <label>
+                            <input type="checkbox" name="in_stock" value="1" 
+                                {% if in_stock %}checked{% endif %}>
+                            В наличии
+                        </label>
+                    </div>
+                </div>
+                
+                <a href="{% url 'products:product_list' %}" class="btn btn-secondary btn-block">
+                    Сбросить фильтры
+                </a>
+            </form>
+        </aside>
+        
+        <!-- Products Grid -->
+        <div class="catalog-main">
+            <div class="catalog-header">
+                <div class="catalog-results">
+                    Найдено: {{ page_obj.paginator.count }} товаров
+                </div>
+                
+                <div class="catalog-sort">
+                    <label for="sortSelect">Сортировка:</label>
+                    <select id="sortSelect" name="sort" class="form-control" onchange="this.form.submit()">
+                        <option value="-created_at" {% if current_sort == '-created_at' %}selected{% endif %}>По новизне</option>
+                        <option value="price" {% if current_sort == 'price' %}selected{% endif %}>Цена: по возрастанию</option>
+                        <option value="-price" {% if current_sort == '-price' %}selected{% endif %}>Цена: по убыванию</option>
+                        <option value="name" {% if current_sort == 'name' %}selected{% endif %}>Название: А-Я</option>
+                        <option value="-name" {% if current_sort == '-name' %}selected{% endif %}>Название: Я-А</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="products-grid">
+                {% for product in page_obj %}
+                    {% include 'products/components/product_card.html' with product=product %}
+                {% empty %}
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">🔍</div>
+                        <h3 class="empty-state-title">Товары не найдены</h3>
+                        <p class="empty-state-description">Попробуйте изменить фильтры</p>
+                        <a href="{% url 'products:product_list' %}" class="btn btn-primary">Сбросить фильтры</a>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">← Назад</a>
+                {% else %}
+                    <span class="disabled">← Назад</span>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <span class="active">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">Вперед →</a>
+                {% else %}
+                    <span class="disabled">Вперед →</span>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Главная{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/home.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title">E-Commerce Store</h1>
+            <p class="hero-subtitle">Широкий выбор качественных товаров по лучшим ценам</p>
+            <a href="{% url 'products:product_list' %}" class="btn btn-primary btn-lg">Перейти в каталог</a>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products -->
+<section class="section">
+    <div class="container">
+        <h2 class="section-title">Наши рекомендации</h2>
+        <div class="products-grid">
+            {% for product in featured_products %}
+                {% include 'products/components/product_card.html' with product=product %}
+            {% empty %}
+                <p class="text-center" style="grid-column: 1 / -1;">Товары не найдены</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- New Arrivals -->
+<section class="section bg-light">
+    <div class="container">
+        <h2 class="section-title">Новинки</h2>
+        <div class="products-grid">
+            {% for product in new_arrivals %}
+                {% include 'products/components/product_card.html' with product=product %}
+            {% empty %}
+                <p class="text-center" style="grid-column: 1 / -1;">Товары не найдены</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Categories -->
+<section class="section">
+    <div class="container">
+        <h2 class="section-title">Категории</h2>
+        <div class="categories-grid">
+            {% for category in categories %}
+            <a href="{% url 'products:category_detail' category.slug %}" class="category-card">
+                <div class="category-card-image">
+                    {% if category.image %}
+                        <img src="{{ category.image.url }}" alt="{{ category.name }}">
+                    {% else %}
+                        <div class="category-placeholder">{{ category.name|slice:":1" }}</div>
+                    {% endif %}
+                </div>
+                <div class="category-card-content">
+                    <h3 class="category-card-title">{{ category.name }}</h3>
+                    <span class="category-card-link">
+                        Смотреть
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
+                        </svg>
+                    </span>
+                </div>
+            </a>
+            {% empty %}
+                <p class="text-center" style="grid-column: 1 / -1;">Категории не найдены</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

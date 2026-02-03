@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Корзина{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cart-page.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+{% include 'components/breadcrumb.html' with breadcrumbs=breadcrumbs %}
+
+<div class="container">
+    <h1>Корзина ({{ cart_items|length }} товаров)</h1>
+    
+    {% if cart_items %}
+    <div class="cart-layout">
+        <!-- Cart Items -->
+        <div class="cart-items">
+            {% for item in cart_items %}
+            <div class="cart-item" data-item-id="{{ item.id }}">
+                <div class="cart-item-image">
+                    {% if item.product.image %}
+                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                    {% else %}
+                        <div class="cart-no-image">Нет фото</div>
+                    {% endif %}
+                </div>
+
+                <div class="cart-item-details">
+                    <a href="{% url 'products:product_detail' item.product.slug %}" class="cart-item-name">
+                        {{ item.product.name }}
+                    </a>
+                    <div class="cart-item-price">
+                        Цена: ₽{{ item.price_at_addition|floatformat:0 }}
+                    </div>
+                    <div class="cart-item-category">
+                        {{ item.product.category.name }}
+                    </div>
+                </div>
+
+                <div class="cart-item-actions">
+                    <form method="POST" action="{% url 'cart:update' item.id %}" class="cart-update-form">
+                        {% csrf_token %}
+                        <div class="quantity-input">
+                            <button type="button" class="quantity-btn" data-action="decrease">−</button>
+                            <input
+                                type="number"
+                                name="quantity"
+                                class="quantity-value cart-quantity-input"
+                                value="{{ item.quantity }}"
+                                min="1"
+                                max="99"
+                                data-item-id="{{ item.id }}"
+                            >
+                            <button type="button" class="quantity-btn" data-action="increase">+</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="cart-item-total" data-item-id="{{ item.id }}">
+                    ₽{{ item.get_total_price|floatformat:0 }}
+                </div>
+
+                <form method="POST" action="{% url 'cart:remove' item.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button
+                        type="submit"
+                        class="cart-item-remove"
+                        data-item-id="{{ item.id }}"
+                        data-product-name="{{ item.product.name }}"
+                        aria-label="Удалить {{ item.product.name }}"
+                    >
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Cart Summary -->
+        <div class="cart-summary">
+            <h3 class="cart-summary-title">Итого</h3>
+
+            <div class="cart-summary-row">
+                <span class="cart-summary-label">Товары:</span>
+                <span class="cart-summary-value" id="cartSubtotal">₽{{ total_price|floatformat:0 }}</span>
+            </div>
+
+            <div class="cart-summary-row">
+                <span class="cart-summary-label">Доставка:</span>
+                <span class="cart-summary-value" id="cartShipping">
+                    {% if total_price >= 3000 %}
+                        Бесплатно
+                    {% else %}
+                        ₽500
+                    {% endif %}
+                </span>
+            </div>
+
+            <div class="cart-summary-row cart-summary-total">
+                <span class="cart-summary-label">Итого:</span>
+                <span class="cart-summary-value" id="cartTotalPrice">
+                    {% if total_price >= 3000 %}
+                        ₽{{ total_price|floatformat:0 }}
+                    {% else %}
+                        ₽{{ total_price|add:500|floatformat:0 }}
+                    {% endif %}
+                </span>
+            </div>
+
+            {% if total_price < 3000 %}
+            <p style="font-size: 0.875rem; color: var(--color-text-secondary); margin-top: var(--spacing-md);">
+                До бесплатной доставки: ₽{{ 3000|add:total_price|floatformat:0 }}
+            </p>
+            {% endif %}
+
+            <a href="{% url 'orders:checkout' %}" class="btn btn-success btn-block btn-lg">
+                Оформить заказ
+            </a>
+        </div>
+    </div>
+
+    <!-- Cart Actions -->
+    <div class="cart-actions">
+        <a href="{% url 'products:product_list' %}" class="btn btn-link">
+            ← Продолжить покупки
+        </a>
+        <form method="POST" action="{% url 'cart:clear' %}" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm" id="clearCartBtn">
+                Очистить корзину
+            </button>
+        </form>
+    </div>
+
+    {% else %}
+    <!-- Empty Cart -->
+    <div class="empty-state">
+        <div class="empty-state-icon">🛒</div>
+        <h3 class="empty-state-title">Ваша корзина пуста</h3>
+        <p class="empty-state-description">Добавьте товары, чтобы оформить заказ</p>
+        <a href="{% url 'products:product_list' %}" class="btn btn-primary">Перейти в каталог</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Оплата отменена{% endblock %}
+
+{% block content %}
+<div class="payment-result">
+    <div class="payment-result-icon error">⚠️</div>
+    
+    <h1 class="payment-result-title">Оплата отменена</h1>
+    
+    <div class="payment-result-order">
+        <p style="font-size: 1.125rem; margin-bottom: var(--spacing-sm);">
+            <strong>Заказ #{{ order.order_number }}</strong>
+        </p>
+        <p style="color: var(--color-text-secondary);">
+            не был оплачен
+        </p>
+    </div>
+    
+    <p class="payment-result-message">
+        Ваш заказ сохранен, но не был оплачен.<br>
+        Вы можете попробовать оплатить его снова или вернуться к покупкам.
+    </p>
+    
+    <div class="payment-result-actions">
+        <a href="{% url 'orders:order_detail' order.order_number %}" class="btn btn-primary btn-lg">
+            Вернуться к заказу
+        </a>
+        <a href="{% url 'core:home' %}" class="btn btn-secondary btn-lg">
+            Вернуться на главную
+        </a>
+    </div>
+    
+    <div style="margin-top: var(--spacing-xl); padding: var(--spacing-lg); background-color: var(--color-bg-secondary); border-radius: var(--radius-md);">
+        <h3 style="margin-bottom: var(--spacing-md);">Что случилось?</h3>
+        <p style="color: var(--color-text-secondary); margin: 0;">
+            Процесс оплаты был прерван. Это могло произойти, если вы:
+        </p>
+        <ul style="color: var(--color-text-secondary); margin-top: var(--spacing-sm);">
+            <li>Закрыли окно оплаты</li>
+            <li>Нажали кнопку "Отмена"</li>
+            <li>Произошла ошибка при обработке платежа</li>
+        </ul>
+        <p style="color: var(--color-text-secondary); margin-top: var(--spacing-md);">
+            Если у вас возникли проблемы, свяжитесь с нашей <a href="{% url 'core:contact' %}">поддержкой</a>.
+        </p>
+    </div>
+</div>
+{% endblock %}

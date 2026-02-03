@@ -1,0 +1,46 @@
+{% load static %}
+<div class="product-card">
+    <div class="product-card-image">
+        <a href="{% url 'products:product_detail' product.slug %}" class="product-card">
+            {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}">
+            {% else %}
+                <div class="product-no-image">Нет фото</div>
+            {% endif %}
+        </a>
+        {% if product.get_discount_percentage %}
+            <span class="product-badge">-{{ product.get_discount_percentage }}%</span>
+        {% endif %}
+    </div>
+    <div class="product-card-content">
+        <a href="{% url 'products:product_detail' product.slug %}">
+            <h3 class="product-card-title">{{ product.name }}</h3>
+        </a>
+        <p class="product-card-category">{{ product.category.name }}</p>
+        <div class="product-card-price">
+            <div class="product-price">₽{{ product.price|floatformat:0 }}</div>
+            {% if product.compare_price %}
+                <div>
+                    <span class="product-price-old">₽{{ product.compare_price|floatformat:0 }}</span>
+                    <span class="product-discount">-{{ product.get_discount_percentage }}%</span>
+                </div>
+            {% endif %}
+        </div>
+        <div class="product-stock {% if product.is_in_stock %}in-stock{% else %}out-of-stock{% endif %}">
+            {% if product.is_in_stock %}
+                ✓ В наличии
+            {% else %}
+                ✗ Нет в наличии
+            {% endif %}
+        </div>
+        {% if product.is_in_stock %}
+            <button class="btn btn-primary btn-block add-to-cart-btn" data-product-id="{{ product.id }}">
+                В корзину
+            </button>
+        {% else %}
+            <button class="btn btn-secondary btn-block" disabled>
+                Нет в наличии
+            </button>
+        {% endif %}
+    </div>
+</div>

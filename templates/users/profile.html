@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Мой профиль{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+{% include 'components/breadcrumb.html' with breadcrumbs=breadcrumbs %}
+
+<div class="container profile-layout">
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="profile-avatar">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.get_full_name }}">
+            {% else %}
+                <div class="profile-avatar-icon">
+                    👤
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="profile-info">
+            <h1 class="profile-name">{{ user.get_full_name|default:user.username }}</h1>
+            <p class="profile-email">{{ user.email }}</p>
+            {% if user.phone %}
+            <p class="profile-phone">{{ user.phone }}</p>
+            {% endif %}
+
+            <div style="margin-top: var(--spacing-lg);">
+                <a href="{% url 'users:profile_edit' %}" class="btn btn-primary">
+                    Редактировать профиль
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Address Section -->
+    <div class="profile-section">
+        <h2 class="profile-section-title">Адрес доставки</h2>
+        {% if user.profile.get_full_address %}
+            <p>{{ user.profile.get_full_address }}</p>
+        {% else %}
+            <p style="color: var(--color-text-secondary);">Адрес не указан</p>
+            <a href="{% url 'users:profile_edit' %}" class="btn btn-sm btn-secondary">
+                Добавить адрес
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="profile-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-lg);">
+            <h2 class="profile-section-title" style="margin-bottom: 0;">Последние заказы</h2>
+            <a href="{% url 'orders:order_list' %}" class="btn btn-link">
+                Все заказы →
+            </a>
+        </div>
+
+        {% if recent_orders %}
+            {% for order in recent_orders %}
+            <div class="order-card">
+                <div class="order-card-header">
+                    <div class="order-number">
+                        Заказ #{{ order.order_number }}
+                    </div>
+                    <span class="order-status {{ order.status }}">
+                        {{ order.get_status_display }}
+                    </span>
+                </div>
+
+                <div class="order-info">
+                    <div>
+                        <strong>Дата:</strong> {{ order.created_at|date:"d.m.Y H:i" }}
+                    </div>
+                    <div>
+                        <strong>Сумма:</strong> ₽{{ order.total|floatformat:0 }}
+                    </div>
+                </div>
+
+                <div class="order-items">
+                    {% for item in order.items.all|slice:":3" %}
+                        {{ item.product_name }} × {{ item.quantity }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                    {% if order.items.count > 3 %}
+                        ... (+еще {{ order.items.count|add:"-3" }} товаров)
+                    {% endif %}
+                </div>
+
+                <div class="order-actions">
+                    <a href="{% url 'orders:order_detail' order.order_number %}" class="btn btn-primary btn-sm">
+                        Подробнее →
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: var(--color-text-secondary);">У вас пока нет заказов</p>
+            <a href="{% url 'products:product_list' %}" class="btn btn-sm btn-primary">
+                Перейти в каталог
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="profile-section">
+        <h2 class="profile-section-title">Быстрые действия</h2>
+        <div style="display: flex; gap: var(--spacing-md); flex-wrap: wrap;">
+            <a href="{% url 'orders:order_list' %}" class="btn btn-secondary">
+                📦 Мои заказы
+            </a>
+            <a href="{% url 'users:account_settings' %}" class="btn btn-secondary">
+                ⚙️ Настройки аккаунта
+            </a>
+            <a href="{% url 'cart:cart_detail' %}" class="btn btn-secondary">
+                🛒 Корзина
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Order status colors */
+.order-status {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: white;
+}
+.order-status.pending { background-color: #FFA500; }
+.order-status.paid { background-color: #28A745; }
+.order-status.failed { background-color: #DC3545; }
+.order-status.cancelled { background-color: #6C757D; }
+.order-status.processing { background-color: #17A2B8; }
+.order-status.shipped { background-color: #007BFF; }
+.order-status.delivered { background-color: #28A745; }
+</style>
+{% endblock %}

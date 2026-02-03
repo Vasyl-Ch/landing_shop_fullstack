@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Оплата успешна{% endblock %}
+
+{% block content %}
+<div class="payment-result">
+    <div class="payment-result-icon success">✅</div>
+    
+    <h1 class="payment-result-title">Оплата успешна!</h1>
+    
+    <div class="payment-result-order">
+        <p style="font-size: 1.125rem; margin-bottom: var(--spacing-sm);">
+            <strong>Заказ #{{ order.order_number }}</strong>
+        </p>
+        <p style="font-size: 1.5rem; font-weight: 700; color: var(--color-success); margin-bottom: var(--spacing-md);">
+            ₽{{ order.total|floatformat:0 }}
+        </p>
+        <p style="color: var(--color-text-secondary);">
+            Подтверждение отправлено на:<br>
+            <strong>{{ order.email }}</strong>
+        </p>
+    </div>
+    
+    <p class="payment-result-message">
+        Спасибо за покупку! Мы начали обработку вашего заказа.<br>
+        Вы получите уведомление о статусе доставки.
+    </p>
+    
+    <div class="payment-result-actions">
+        <a href="{% url 'orders:order_detail' order.order_number %}" class="btn btn-primary btn-lg">
+            Просмотреть заказ
+        </a>
+        <a href="{% url 'core:home' %}" class="btn btn-secondary btn-lg">
+            Вернуться на главную
+        </a>
+    </div>
+    
+    {% if order.items.all %}
+    <div style="margin-top: var(--spacing-xxl); text-align: left;">
+        <h3 style="margin-bottom: var(--spacing-lg);">Заказанные товары:</h3>
+        <div style="background-color: var(--color-bg-secondary); padding: var(--spacing-lg); border-radius: var(--radius-md);">
+            {% for item in order.items.all %}
+            <div style="display: flex; justify-content: space-between; padding: var(--spacing-sm) 0; 
+                {% if not forloop.last %}border-bottom: 1px solid var(--color-border);{% endif %}">
+                <span>{{ item.product_name }} × {{ item.quantity }}</span>
+                <span style="font-weight: 600;">₽{{ item.total_price|floatformat:0 }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Confetti animation (optional)
+setTimeout(() => {
+    Toast.success('Заказ успешно оформлен!');
+}, 500);
+</script>
+{% endblock %}
