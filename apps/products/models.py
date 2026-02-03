@@ -122,7 +122,7 @@ class Product(models.Model):
     )
 
     price = models.DecimalField(
-        _("цена"), max_digits=10, decimal_places=2, help_text=_("Цена в рублях")
+        _("цена"), max_digits=10, decimal_places=2, help_text=_("Цена в валюте")
     )
     compare_price = models.DecimalField(
         _("цена для сравнения"),

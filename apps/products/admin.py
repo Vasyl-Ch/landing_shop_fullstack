@@ -114,14 +114,14 @@ class ProductAdmin(admin.ModelAdmin):
         if obj.compare_price and obj.compare_price > obj.price:
             discount = obj.get_discount_percentage()
             return format_html(
-                '<span style="text-decoration: line-through; color: #999;">{} ₽</span> '
-                "<strong>{} ₽</strong> "
+                '<span style="text-decoration: line-through; color: #999;">{} €</span> '
+                "<strong>{} €</strong> "
                 '<span style="color: green;">(-{}%)</span>',
                 obj.compare_price,
                 obj.price,
                 discount,
             )
-        return f"{obj.price} ₽"
+        return f"{obj.price} €"
 
     price_display.short_description = _("Цена")
 

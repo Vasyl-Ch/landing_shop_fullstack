@@ -121,7 +121,7 @@ class Migration(migrations.Migration):
                     "price",
                     models.DecimalField(
                         decimal_places=2,
-                        help_text="Цена в рублях",
+                        help_text="Цена в валюте",
                         max_digits=10,
                         verbose_name="цена",
                     ),
