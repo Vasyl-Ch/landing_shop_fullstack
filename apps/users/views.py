@@ -6,6 +6,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.utils.translation import gettext_lazy
 from django.urls import reverse_lazy
+from django.conf import settings
 from apps.users.models import User, UserProfile
 from apps.cart.models import Cart
 
@@ -27,26 +28,30 @@ class RegisterView(View):
     def post(self, request):
         email = request.POST.get("email")
         username = request.POST.get("username")
-        password = request.POST.get("password")
-        password_confirm = request.POST.get("password_confirm")
+        password1 = request.POST.get("password1")  # Изменено с "password"
+        password2 = request.POST.get("password2")  # Изменено с "password_confirm"
         first_name = request.POST.get("first_name", "")
         last_name = request.POST.get("last_name", "")
         phone = request.POST.get("phone", "")
 
-        if not all([email, username, password, password_confirm]):
+        if not all([email, username, password1, password2]):
             messages.error(request, gettext_lazy("Заполните все обязательные поля"))
             return redirect("users:register")
 
-        if password != password_confirm:
+        if password1 != password2:
             messages.error(request, gettext_lazy("Пароли не совпадают"))
             return redirect("users:register")
 
-        if len(password) < 8:
-            messages.error(request, gettext_lazy("Пароль должен содержать минимум 8 символов"))
+        if len(password1) < 8:
+            messages.error(
+                request, gettext_lazy("Пароль должен содержать минимум 8 символов")
+            )
             return redirect("users:register")
 
         if User.objects.filter(email=email).exists():
-            messages.error(request, gettext_lazy("Пользователь с таким email уже существует"))
+            messages.error(
+                request, gettext_lazy("Пользователь с таким email уже существует")
+            )
             return redirect("users:register")
 
         if User.objects.filter(username=username).exists():
@@ -57,7 +62,7 @@ class RegisterView(View):
             user = User.objects.create_user(
                 email=email,
                 username=username,
-                password=password,
+                password=password1,
                 first_name=first_name,
                 last_name=last_name,
                 phone=phone,
@@ -74,7 +79,9 @@ class RegisterView(View):
 
             login(request, user)
 
-            messages.success(request, gettext_lazy("Регистрация успешна! Добро пожаловать!"))
+            messages.success(
+                request, gettext_lazy("Регистрация успешна! Добро пожаловать!")
+            )
             return redirect("core:home")
 
         except Exception as e:
@@ -113,7 +120,8 @@ class LoginView(View):
             if not remember_me:
                 request.session.set_expiry(0)  # Browser close
 
-            guest_token = request.COOKIES.get("guest_token")
+            # Merge guest cart with user cart
+            guest_token = request.COOKIES.get(settings.GUEST_TOKEN_COOKIE_NAME)
             if guest_token:
                 try:
                     guest_cart = Cart.objects.get(guest_token=guest_token)
@@ -123,7 +131,8 @@ class LoginView(View):
                     pass
 
             messages.success(
-                request, gettext_lazy(f"Добро пожаловать, {user.first_name or user.email}!")
+                request,
+                gettext_lazy(f"Добро пожаловать, {user.first_name or user.email}!"),
             )
 
             next_url = request.GET.get("next") or request.POST.get("next")
