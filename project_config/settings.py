@@ -11,10 +11,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
-from dotenv import load_dotenv
 from pathlib import Path
-
-load_dotenv()
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,12 +22,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = config("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config("DEBUG", default=False, cast=bool)
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", default="").split(",")
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="").split(",")
 
 
 # Application definition
@@ -41,6 +39,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "drf_yasg",
+    "rest_framework",
+    "apps.users",
+    "apps.products",
+    "apps.cart",
+    "apps.orders",
+    "apps.payments",
 ]
 
 MIDDLEWARE = [
@@ -51,6 +56,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.cart.middleware.CartMiddleware",
 ]
 
 ROOT_URLCONF = "project_config.urls"
@@ -115,6 +121,7 @@ USE_I18N = True
 
 USE_TZ = True
 
+AUTH_USER_MODEL = "users.User"
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
@@ -148,3 +155,81 @@ GUEST_TOKEN_COOKIE_AGE = 31536000  # 1 year
 GUEST_TOKEN_COOKIE_HTTPONLY = True
 GUEST_TOKEN_COOKIE_SECURE = not DEBUG
 GUEST_TOKEN_COOKIE_SAMESITE = "Lax"
+
+# Stripe Configuration
+STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+# Celery Configuration
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv(
+    "CELERY_RESULT_BACKEND", default="redis://localhost:6379/0"
+)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60
+
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
+}
+
+# Swagger settings
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "Basic": {"type": "basic"},
+        "Session": {"type": "apiKey", "in": "cookie", "name": "sessionid"},
+    },
+    "USE_SESSION_AUTH": True,
+    "LOGIN_URL": "/admin/login/",
+    "LOGOUT_URL": "/admin/logout/",
+}
+
+# Logging
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "apps.payments": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "apps.orders": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
