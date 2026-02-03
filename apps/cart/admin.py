@@ -92,8 +92,6 @@ class CartAdmin(admin.ModelAdmin):
 
     total_price_display.short_description = _("Сумма")
 
-    total_price_display.short_description = _("Итого")
-
     def has_add_permission(self, request):
         """We do not allow manual creation of carts."""
         return False

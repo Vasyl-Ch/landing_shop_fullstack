@@ -4,11 +4,9 @@ import stripe
 from django.conf import settings
 from django.urls import reverse
 from decimal import Decimal
-from dotenv import load_dotenv
 
-load_dotenv()
 
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 class StripeService:
