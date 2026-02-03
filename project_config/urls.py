@@ -27,7 +27,7 @@ schema_view = get_schema_view(
     openapi.Info(
         title="E-commerce API",
         default_version="v1",
-        description="API Documentation for the e-commerce platform",
+        description="API Documentation for the e-commerce platform (not implemented yet)",
         terms_of_service="https://www.google.com/policies/terms/",
         contact=openapi.Contact(email="contact@ecommerce.local"),
         license=openapi.License(name="BSD License"),
