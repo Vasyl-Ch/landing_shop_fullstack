@@ -143,7 +143,9 @@ class CartItem(models.Model):
 
     def get_total_price(self):
         """The cost of this item (price × quantity)."""
-        return self.price_at_addition * self.quantity
+        if self.price_at_addition is not None:
+            return self.price_at_addition * self.quantity
+        return None
 
     def increase_quantity(self, amount=1):
         """Increases the quantity of goods."""

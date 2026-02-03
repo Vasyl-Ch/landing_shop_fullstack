@@ -13,18 +13,27 @@ class CartItemInline(admin.TabularInline):
         "product",
         "quantity",
         "price_at_addition",
-        "total_price",
+        "total_price_display",
         "created_at",
     )
     can_delete = True
 
-    fields = ("product", "quantity", "price_at_addition", "total_price", "created_at")
+    fields = (
+        "product",
+        "quantity",
+        "price_at_addition",
+        "total_price_display",
+        "created_at",
+    )
 
-    def total_price(self, obj):
+    def total_price_display(self, obj):
         """The total value of the position."""
-        return f"{obj.get_total_price()} €"
+        if obj.pk:
+            total = obj.get_total_price()
+            return f"{total} €" if total is not None else "-"
+        return "-"
 
-    total_price.short_description = _("Сумма")
+    total_price_display.short_description = _("Сумма")
 
 
 @admin.register(Cart)
@@ -77,9 +86,11 @@ class CartAdmin(admin.ModelAdmin):
     items_count.short_description = _("Товаров")
 
     def total_price_display(self, obj):
-        """The total cost of the cart."""
+        """The total value of the position."""
         total = obj.get_total_price()
-        return format_html("<strong>{} €</strong>", total)
+        return f"{total} €" if total is not None else "-"
+
+    total_price_display.short_description = _("Сумма")
 
     total_price_display.short_description = _("Итого")
 
