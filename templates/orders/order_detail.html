@@ -76,12 +76,12 @@
                 <div class="cart-item-name">{{ item.product_name }}</div>
                 {% endif %}
                 <div class="cart-item-price">
-                    ₽{{ item.product_price|floatformat:0 }} × {{ item.quantity }}
+                    €{{ item.product_price|floatformat:0 }} × {{ item.quantity }}
                 </div>
             </div>
 
             <div class="cart-item-total">
-                ₽{{ item.total_price|floatformat:0 }}
+                €{{ item.total_price|floatformat:0 }}
             </div>
         </div>
         {% endfor %}
@@ -90,14 +90,14 @@
         <div style="max-width: 400px; margin-left: auto;">
             <div class="cart-summary-row">
                 <span class="cart-summary-label">Сумма товаров:</span>
-                <span class="cart-summary-value">₽{{ order.subtotal|floatformat:0 }}</span>
+                <span class="cart-summary-value">€{{ order.subtotal|floatformat:0 }}</span>
             </div>
 
             <div class="cart-summary-row">
                 <span class="cart-summary-label">Доставка:</span>
                 <span class="cart-summary-value">
                     {% if order.shipping_cost > 0 %}
-                        ₽{{ order.shipping_cost|floatformat:0 }}
+                        €{{ order.shipping_cost|floatformat:0 }}
                     {% else %}
                         Бесплатно
                     {% endif %}
@@ -108,7 +108,7 @@
 
             <div class="cart-summary-row cart-summary-total">
                 <span class="cart-summary-label">ИТОГО:</span>
-                <span class="cart-summary-value">₽{{ order.total|floatformat:0 }}</span>
+                <span class="cart-summary-value">€{{ order.total|floatformat:0 }}</span>
             </div>
         </div>
     </div>

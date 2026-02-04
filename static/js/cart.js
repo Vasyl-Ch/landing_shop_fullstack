@@ -9,24 +9,24 @@ class CartManager {
         this.updateTimeout = null; // For debouncing
         this.init();
     }
-    
+
     init() {
         // Load cart on page load
         this.loadCart();
-        
+
         // Bind add to cart buttons
         this.bindAddToCartButtons();
-        
+
         // Bind update quantity buttons
         this.bindUpdateQuantityButtons();
-        
+
         // Bind remove buttons
         this.bindRemoveButtons();
-        
+
         // Bind clear cart button
         this.bindClearCartButton();
     }
-    
+
     /**
      * Load cart data from server
      */
@@ -36,7 +36,7 @@ class CartManager {
             console.error('API utility not loaded');
             return;
         }
-        
+
         try {
             const data = await API.get('/cart/ajax/get/');
             this.updateCartDisplay(data);
@@ -44,7 +44,7 @@ class CartManager {
             console.error('Failed to load cart:', error);
         }
     }
-    
+
     /**
      * Update cart display in header
      */
@@ -54,10 +54,10 @@ class CartManager {
             console.error('Utils utility not loaded');
             return;
         }
-        
+
         if (this.cartCountElement) {
             this.cartCountElement.textContent = data.cart_items_count || 0;
-            
+
             // Hide badge if cart is empty
             if (data.cart_items_count === 0) {
                 this.cartCountElement.style.display = 'none';
@@ -65,12 +65,12 @@ class CartManager {
                 this.cartCountElement.style.display = 'flex';
             }
         }
-        
+
         if (this.cartTotalElement) {
             this.cartTotalElement.textContent = Utils.formatPrice(data.cart_total || 0);
         }
     }
-    
+
     /**
      * Bind "Add to Cart" buttons
      */
@@ -78,29 +78,29 @@ class CartManager {
         document.querySelectorAll('.add-to-cart-btn').forEach(button => {
             button.addEventListener('click', async (e) => {
                 e.preventDefault();
-                
+
                 const productId = button.dataset.productId;
                 const quantityInput = button.closest('form')?.querySelector('input[name="quantity"]');
                 const quantity = quantityInput ? parseInt(quantityInput.value) : 1;
-                
+
                 await this.addToCart(productId, quantity);
             });
         });
-        
+
         // Also handle form submissions
         document.querySelectorAll('.add-to-cart-form').forEach(form => {
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                
+
                 const formData = new FormData(form);
                 const productId = formData.get('product_id');
                 const quantity = parseInt(formData.get('quantity')) || 1;
-                
+
                 await this.addToCart(productId, quantity);
             });
         });
     }
-    
+
     /**
      * Add item to cart
      */
@@ -113,22 +113,22 @@ class CartManager {
             }
             return;
         }
-        
+
         if (!window.Toast) {
             console.error('Toast utility not loaded');
             return;
         }
-        
+
         try {
             const data = await API.post('/cart/ajax/add/', {
                 product_id: productId,
                 quantity: quantity,
             });
-            
+
             if (data.success) {
                 // Toast.success(data.message || 'Товар добавлен в корзину'); // Убрано
                 this.updateCartDisplay(data);
-                
+
                 // Animate cart icon
                 this.animateCartIcon();
             } else {
@@ -139,7 +139,7 @@ class CartManager {
             Toast.error('Не удалось добавить товар в корзину');
         }
     }
-    
+
     /**
      * Bind quantity update buttons
      */
@@ -148,19 +148,19 @@ class CartManager {
         // Only bind to cart-related quantity inputs (not product page inputs)
         document.querySelectorAll('.quantity-input').forEach(container => {
             const cartInput = container.querySelector('.cart-quantity-input');
-            
+
             if (cartInput) {
                 // This is a cart quantity input, handle cart logic
                 const newContainer = container.cloneNode(true);
                 container.parentNode.replaceChild(newContainer, container);
-                
+
                 const input = newContainer.querySelector('.quantity-value');
                 const decreaseBtn = newContainer.querySelector('.quantity-btn[data-action="decrease"]');
                 const increaseBtn = newContainer.querySelector('.quantity-btn[data-action="increase"]');
-                
+
                 if (input && input.classList.contains('cart-quantity-input')) {
                     const itemId = input.dataset.itemId;
-                    
+
                     // Input change event
                     input.addEventListener('change', async (e) => {
                         e.preventDefault();
@@ -169,30 +169,30 @@ class CartManager {
                             await this.updateQuantity(itemId, quantity);
                         }
                     });
-                    
+
                     // Decrease button
                     if (decreaseBtn) {
                         decreaseBtn.addEventListener('click', async (e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            
+
                             let currentQuantity = parseInt(input.value) || 1;
                             if (currentQuantity > 1) {
                                 input.value = currentQuantity - 1;
-                                input.dispatchEvent(new Event('change', { bubbles: true }));
+                                input.dispatchEvent(new Event('change', {bubbles: true}));
                             }
                         });
                     }
-                    
+
                     // Increase button
                     if (increaseBtn) {
                         increaseBtn.addEventListener('click', async (e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            
+
                             let currentQuantity = parseInt(input.value) || 1;
                             input.value = currentQuantity + 1;
-                            input.dispatchEvent(new Event('change', { bubbles: true }));
+                            input.dispatchEvent(new Event('change', {bubbles: true}));
                         });
                     }
                 }
@@ -200,7 +200,7 @@ class CartManager {
             // If no cart-quantity-input class, let main.js QuantityInput handle it
         });
     }
-    
+
     /**
      * Update item quantity with debouncing
      */
@@ -211,17 +211,17 @@ class CartManager {
             Toast.error('Ошибка загрузки модулей');
             return;
         }
-        
+
         if (!window.Toast) {
             console.error('Toast utility not loaded');
             return;
         }
-        
+
         // Clear existing timeout
         if (this.updateTimeout) {
             clearTimeout(this.updateTimeout);
         }
-        
+
         // Debounce the update request
         this.updateTimeout = setTimeout(async () => {
             try {
@@ -229,21 +229,31 @@ class CartManager {
                     item_id: itemId,
                     quantity: quantity,
                 });
-                
+
                 if (data.success) {
                     this.updateCartDisplay(data);
                     this.updateCartPage(data);
                     // Toast.success('Количество обновлено'); // Убрано
                 } else {
                     Toast.error(data.message || 'Ошибка при обновлении количества');
+                    // Восстанавливаем предыдущее значение в input
+                    const input = document.querySelector(`input[data-item-id="${itemId}"]`);
+                    if (input && data.old_quantity) {
+                        input.value = data.old_quantity;
+                    } else {
+                        // Перезагружаем страницу если не можем восстановить
+                        this.loadCart();
+                    }
                 }
             } catch (error) {
                 console.error('Update quantity error:', error);
                 Toast.error('Не удалось обновить количество. Попробуйте еще раз.');
+                // Перезагружаем корзину при ошибке
+                this.loadCart();
             }
         }, 300); // 300ms delay
     }
-    
+
     /**
      * Bind remove item buttons
      */
@@ -252,13 +262,13 @@ class CartManager {
         document.querySelectorAll('.cart-item-remove').forEach(button => {
             const newButton = button.cloneNode(true);
             button.parentNode.replaceChild(newButton, button);
-            
+
             newButton.addEventListener('click', async (e) => {
                 e.preventDefault();
-                
+
                 const itemId = newButton.dataset.itemId;
                 const productName = newButton.dataset.productName;
-                
+
                 Modal.confirm(
                     'Удалить товар?',
                     `Вы уверены, что хотите удалить "${productName}" из корзины?`,
@@ -269,7 +279,7 @@ class CartManager {
             });
         });
     }
-    
+
     /**
      * Remove item from cart
      */
@@ -278,19 +288,19 @@ class CartManager {
             const data = await API.post('/cart/ajax/remove/', {
                 item_id: itemId,
             });
-            
+
             if (data.success) {
                 // Toast.success('Товар удален из корзины'); // Убрано
                 this.updateCartDisplay(data);
                 this.updateCartPage(data);
-                
+
                 // Remove item from DOM
                 const itemElement = document.querySelector(`[data-item-id="${itemId}"]`)?.closest('.cart-item');
                 if (itemElement) {
                     itemElement.style.animation = 'fadeOut 0.3s ease-out';
                     setTimeout(() => itemElement.remove(), 300);
                 }
-                
+
                 // Show empty state if no items
                 if (data.cart_items_count === 0) {
                     this.showEmptyCart();
@@ -303,7 +313,7 @@ class CartManager {
             console.error('Remove item error:', error);
         }
     }
-    
+
     /**
      * Bind clear cart button
      */
@@ -312,7 +322,7 @@ class CartManager {
         if (clearBtn) {
             clearBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
-                
+
                 Modal.confirm(
                     'Очистить корзину?',
                     'Вы уверены, что хотите удалить все товары из корзины?',
@@ -323,14 +333,14 @@ class CartManager {
             });
         }
     }
-    
+
     /**
      * Clear all items from cart
      */
     async clearCart() {
         try {
             const data = await API.post('/cart/ajax/clear/', {});
-            
+
             if (data.success) {
                 // Toast.success('Корзина очищена'); // Убрано
                 this.updateCartDisplay(data);
@@ -343,33 +353,33 @@ class CartManager {
             console.error('Clear cart error:', error);
         }
     }
-    
+
     /**
      * Update cart page with new data
      */
     updateCartPage(data) {
         const subtotal = data.subtotal !== undefined ? data.subtotal : data.cart_total || 0;
-        const shippingCost = data.shipping_cost !== undefined ? data.shipping_cost : 0;
-        const total = subtotal + shippingCost;
-        
+        const shippingText = data.shipping_text || 'В соответствии с тарифами перевозчика';
+        const total = subtotal;
+
         // Update subtotal
         const subtotalElement = document.getElementById('cartSubtotal');
         if (subtotalElement) {
             subtotalElement.textContent = Utils.formatPrice(subtotal);
         }
-        
+
         // Update shipping
         const shippingElement = document.getElementById('cartShipping');
         if (shippingElement) {
-            shippingElement.textContent = shippingCost === 0 ? 'Бесплатно' : Utils.formatPrice(shippingCost);
+            shippingElement.textContent = shippingText;
         }
-        
+
         // Update total
         const totalElement = document.getElementById('cartTotalPrice');
         if (totalElement) {
             totalElement.textContent = Utils.formatPrice(total);
         }
-        
+
         // Update individual item totals
         if (data.items) {
             data.items.forEach(item => {
@@ -383,17 +393,17 @@ class CartManager {
                 });
             });
         }
-        
+
         // Update free shipping message
         this.updateFreeShippingMessage(subtotal);
     }
-    
+
     /**
      * Update free shipping message
      */
     updateFreeShippingMessage(cartTotal) {
         const freeShippingThreshold = 1000;
-        
+
         // Find or create free shipping message element
         let shippingMessage = document.querySelector('.free-shipping-message');
         if (!shippingMessage) {
@@ -405,19 +415,19 @@ class CartManager {
                 summaryDiv.appendChild(shippingMessage);
             }
         }
-        
+
         if (shippingMessage) {
             if (cartTotal >= freeShippingThreshold) {
                 shippingMessage.textContent = '✓ Бесплатная доставка!';
                 shippingMessage.style.color = 'var(--color-success)';
             } else {
                 const remaining = freeShippingThreshold - cartTotal;
-                shippingMessage.textContent = `До бесплатной доставки: ₽${remaining.toFixed(0)}`;
+                shippingMessage.textContent = `До бесплатной доставки: €${remaining.toFixed(0)}`;
                 shippingMessage.style.color = 'var(--color-text-secondary)';
             }
         }
     }
-    
+
     /**
      * Show empty cart state
      */
@@ -425,13 +435,13 @@ class CartManager {
         const cartItemsContainer = document.querySelector('.cart-items');
         const cartSummary = document.querySelector('.cart-summary');
         const cartActions = document.querySelector('.cart-actions');
-        
+
         // Remove free shipping message
         const shippingMessage = document.querySelector('.free-shipping-message');
         if (shippingMessage) {
             shippingMessage.remove();
         }
-        
+
         if (cartItemsContainer) {
             cartItemsContainer.innerHTML = `
                 <div class="empty-state">
@@ -442,16 +452,16 @@ class CartManager {
                 </div>
             `;
         }
-        
+
         if (cartSummary) {
             cartSummary.style.display = 'none';
         }
-        
+
         if (cartActions) {
             cartActions.style.display = 'none';
         }
     }
-    
+
     /**
      * Animate cart icon when item is added
      */
@@ -473,13 +483,13 @@ class GuestCartManager {
     static getToken() {
         return this.getCookie('guest_cart_token');
     }
-    
+
     static setToken(token) {
         const expires = new Date();
         expires.setDate(expires.getDate() + 30); // 30 days
         document.cookie = `guest_cart_token=${token}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
     }
-    
+
     static getCookie(name) {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);

@@ -19,12 +19,38 @@ class ProductListView(ListView):
     def get_queryset(self):
         queryset = Product.objects.filter(is_active=True).select_related("category")
 
+        # Фильтр по категориям
+        categories = self.request.GET.getlist("category")
+        if categories:
+            queryset = queryset.filter(category__slug__in=categories)
+
+        # Фильтр по цене
+        price_min = self.request.GET.get("price_min")
+        price_max = self.request.GET.get("price_max")
+        if price_min:
+            try:
+                queryset = queryset.filter(price__gte=float(price_min))
+            except ValueError:
+                pass
+        if price_max:
+            try:
+                queryset = queryset.filter(price__lte=float(price_max))
+            except ValueError:
+                pass
+
+        # Фильтр по наличию
+        in_stock = self.request.GET.get("in_stock")
+        if in_stock:
+            queryset = queryset.filter(stock__gt=0)
+
+        # Поиск
         search_query = self.request.GET.get("q")
         if search_query:
             queryset = queryset.filter(
                 Q(name__icontains=search_query) | Q(description__icontains=search_query)
             )
 
+        # Сортировка
         sort_by = self.request.GET.get("sort", "-created_at")
         allowed_sorts = [
             "price",
@@ -44,7 +70,13 @@ class ProductListView(ListView):
         context["title"] = "Каталог товаров"
         context["search_query"] = self.request.GET.get("q", "")
         context["current_sort"] = self.request.GET.get("sort", "-created_at")
-        context["categories"] = Category.objects.filter(is_active=True)
+        context["categories"] = Category.objects.filter(
+            is_active=True, parent__isnull=True
+        )
+        context["selected_categories"] = self.request.GET.getlist("category")
+        context["price_min"] = self.request.GET.get("price_min", "")
+        context["price_max"] = self.request.GET.get("price_max", "")
+        context["in_stock"] = self.request.GET.get("in_stock", "")
         context["breadcrumbs"] = [
             {"title": "Главная", "url": reverse("core:home")},
             {"title": "Каталог товаров", "url": None},
@@ -86,10 +118,28 @@ class ProductDetailView(DetailView):
             .select_related("category")[:4]
         )
 
+        # Безопасное получение URL для breadcrumbs
+        try:
+            home_url = reverse("core:home")
+        except:
+            home_url = "/"
+        
+        try:
+            product_list_url = reverse("products:product_list")
+        except:
+            product_list_url = "/products/"
+        
+        category_url = None
+        if product.category:
+            try:
+                category_url = reverse("products:category_detail", kwargs={"slug": product.category.slug})
+            except:
+                category_url = f"/products/category/{product.category.slug}/"
+
         context["breadcrumbs"] = [
-            {"title": "Главная", "url": reverse("core:home")},
-            {"title": "Каталог товаров", "url": reverse("products:product_list")},
-            {"title": product.category.name if product.category else "Товар", "url": reverse("products:category_detail", kwargs={"slug": product.category.slug}) if product.category else None},
+            {"title": "Главная", "url": home_url},
+            {"title": "Каталог товаров", "url": product_list_url},
+            {"title": product.category.name if product.category else "Товар", "url": category_url},
             {"title": product.name, "url": None},
         ]
 
@@ -119,13 +169,31 @@ class CategoryDetailView(DetailView):
         all_category_ids.extend([child.id for child in category.get_all_children()])
 
         products = (
-            Product.objects.filter(
-                is_active=True, category_id__in=all_category_ids
-            )
+            Product.objects.filter(is_active=True, category_id__in=all_category_ids)
             .select_related("category")
             .order_by("-created_at")
         )
 
+        # Фильтр по цене
+        price_min = self.request.GET.get("price_min")
+        price_max = self.request.GET.get("price_max")
+        if price_min:
+            try:
+                products = products.filter(price__gte=float(price_min))
+            except ValueError:
+                pass
+        if price_max:
+            try:
+                products = products.filter(price__lte=float(price_max))
+            except ValueError:
+                pass
+
+        # Фильтр по наличию
+        in_stock = self.request.GET.get("in_stock")
+        if in_stock:
+            products = products.filter(stock__gt=0)
+
+        # Сортировка
         sort_by = self.request.GET.get("sort", "-created_at")
         allowed_sorts = [
             "price",
@@ -147,17 +215,21 @@ class CategoryDetailView(DetailView):
         context["is_paginated"] = page_obj.has_other_pages()
         context["title"] = category.name
         context["current_sort"] = sort_by
-        
+        context["price_min"] = self.request.GET.get("price_min", "")
+        context["price_max"] = self.request.GET.get("price_max", "")
+        context["in_stock"] = self.request.GET.get("in_stock", "")
+        context["subcategories"] = category.children.filter(is_active=True)
+
         # Build breadcrumbs for category with parent hierarchy
         breadcrumbs = [{"title": "Главная", "url": reverse("core:home")}]
-        
+
         # Add parent categories if they exist
         if category.parent:
             parent_chain = category.get_parent_chain()
             # Reverse to show from root to immediate parent
             for parent in reversed(parent_chain):
                 breadcrumbs.append({"title": parent.name, "url": reverse("products:category_detail", kwargs={"slug": parent.slug})})
-        
+
         breadcrumbs.append({"title": category.name, "url": None})
         context["breadcrumbs"] = breadcrumbs
 

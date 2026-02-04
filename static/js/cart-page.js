@@ -61,19 +61,19 @@ class CartPage {
      */
     updateSummaryDisplay(data) {
         const subtotal = data.subtotal || 0;
-        const shipping = data.shipping_cost || 0;
-        const total = subtotal + shipping;
-        
+        const shippingText = data.shipping_text || 'В соответствии с тарифами перевозчика';
+        const total = subtotal;
+
         const subtotalElement = document.getElementById('cartSubtotal');
         const shippingElement = document.getElementById('cartShipping');
         const totalElement = document.getElementById('cartTotalPrice');
-        
+
         if (subtotalElement) subtotalElement.textContent = Utils.formatPrice(subtotal);
         if (shippingElement) {
-            shippingElement.textContent = shipping === 0 ? 'Бесплатно' : Utils.formatPrice(shipping);
+            shippingElement.textContent = shippingText;
         }
         if (totalElement) totalElement.textContent = Utils.formatPrice(total);
-    }
+}
     
 }
 

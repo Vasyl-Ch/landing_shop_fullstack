@@ -14,7 +14,7 @@
             <strong>Заказ #{{ order.order_number }}</strong>
         </p>
         <p style="font-size: 1.5rem; font-weight: 700; color: var(--color-success); margin-bottom: var(--spacing-md);">
-            ₽{{ order.total|floatformat:0 }}
+            €{{ order.total|floatformat:0 }}
         </p>
         <p style="color: var(--color-text-secondary);">
             Подтверждение отправлено на:<br>
@@ -44,7 +44,7 @@
             <div style="display: flex; justify-content: space-between; padding: var(--spacing-sm) 0; 
                 {% if not forloop.last %}border-bottom: 1px solid var(--color-border);{% endif %}">
                 <span>{{ item.product_name }} × {{ item.quantity }}</span>
-                <span style="font-weight: 600;">₽{{ item.total_price|floatformat:0 }}</span>
+                <span style="font-weight: 600;">€{{ item.total_price|floatformat:0 }}</span>
             </div>
             {% endfor %}
         </div>

@@ -6,20 +6,23 @@ from apps.orders.models import Order, OrderItem
 def calculate_shipping_cost(order_data):
     """
     Calculates shipping costs.
-
-    In the future project, there will be a complex logic:
-    - By weight of goods
-    - By delivery address
-    - By order amount (free delivery from X rubles)
-
-    Free shipping for orders >= 1000 rubles, otherwise 500 rubles.
+    Returns 0 for free shipping threshold, otherwise returns 0 as well
+    (actual cost determined by carrier).
     """
-    subtotal = order_data.get("subtotal", 0)
-    if isinstance(subtotal, Decimal):
-        subtotal = float(subtotal)
-    if subtotal >= 1000:
-        return Decimal("0.00")
-    return Decimal("500.00")
+    return Decimal("0.00")
+
+
+def get_shipping_text(subtotal):
+    """
+    Returns shipping cost text based on order amount.
+    Free shipping for orders >= 1000 rubles.
+    """
+    if isinstance(subtotal, (str, int, float)):
+        subtotal = Decimal(str(subtotal))
+
+    if subtotal >= Decimal("1000.00"):
+        return "Бесплатно"
+    return "В соответствии с тарифами перевозчика"
 
 
 @transaction.atomic
@@ -79,20 +82,31 @@ def create_order_from_cart(cart, order_data):
     )
 
     for cart_item in cart.items.select_related("product"):
-        if not cart_item.product.is_in_stock():
-            raise ValueError(f'Товар "{cart_item.product.name}" недоступен')
+        product = cart_item.product
+
+        if not product.is_in_stock():
+            raise ValueError(f'Товар "{product.name}" недоступен для заказа')
+
+        if product.track_inventory:
+            if cart_item.quantity > product.stock:
+                raise ValueError(
+                    f'Недостаточно товара "{product.name}" на складе. '
+                    f"Доступно: {product.stock} шт., в корзине: {cart_item.quantity} шт."
+                )
 
         OrderItem.objects.create(
             order=order,
-            product=cart_item.product,
+            product=product,
             quantity=cart_item.quantity,
         )
 
-        success = cart_item.product.reduce_stock(cart_item.quantity)
-        if not success:
-            raise ValueError(
-                f'Недостаточно товара "{cart_item.product.name}" на складе'
-            )
+        if product.track_inventory:
+            success = product.reduce_stock(cart_item.quantity)
+            if not success:
+                raise ValueError(
+                    f'Ошибка при резервировании товара "{product.name}". '
+                    f"Возможно, другой пользователь только что приобрел последние экземпляры."
+                )
 
     cart.clear()
 

@@ -18,10 +18,10 @@
         </a>
         <p class="product-card-category">{{ product.category.name }}</p>
         <div class="product-card-price">
-            <div class="product-price">₽{{ product.price|floatformat:0 }}</div>
+            <div class="product-price">€{{ product.price|floatformat:0 }}</div>
             {% if product.compare_price %}
                 <div>
-                    <span class="product-price-old">₽{{ product.compare_price|floatformat:0 }}</span>
+                    <span class="product-price-old">€{{ product.compare_price|floatformat:0 }}</span>
                     <span class="product-discount">-{{ product.get_discount_percentage }}%</span>
                 </div>
             {% endif %}

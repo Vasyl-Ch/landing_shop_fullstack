@@ -235,6 +235,12 @@ class Product(models.Model):
             return True
         return self.allow_backorder
 
+    def get_available_quantity(self):
+        """Returns available quantity for purchase."""
+        if not self.track_inventory:
+            return 9999
+        return self.stock
+
     def get_discount_percentage(self):
         """Calculates the discount percentage."""
         if self.compare_price and self.compare_price > self.price:
