@@ -4,6 +4,7 @@ from django.views.decorators.http import require_POST
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.utils.translation import gettext as _
+from django.urls import reverse
 from apps.orders.models import Order
 from apps.payments.services import StripeService
 from apps.payments.tasks import process_stripe_webhook
@@ -39,9 +40,28 @@ def payment_success(request, order_number):
     """
     order = get_object_or_404(Order, order_number=order_number)
 
+    # Check if payment was actually processed by verifying with Stripe
+    if order.stripe_checkout_session_id:
+        try:
+            session = StripeService.retrieve_checkout_session(order.stripe_checkout_session_id)
+            if session.payment_status == 'paid' and order.status != Order.Status.PAID:
+                order.mark_as_paid()
+                messages.success(request, _("Заказ успешно оплачен!"))
+            elif session.payment_status != 'paid':
+                messages.warning(request, _("Оплата ещё обрабатывается. Пожалуйста, подождите немного."))
+        except Exception as e:
+            logger.error(f"Error checking payment status: {str(e)}")
+            messages.info(request, _("Статус оплаты будет обновлён в ближайшее время."))
+
     context = {
         "order": order,
         "title": _("Оплата успешна"),
+        "breadcrumbs": [
+            {"title": "Главная", "url": reverse("core:home")},
+            {"title": "Мои заказы", "url": reverse("orders:order_list")},
+            {"title": f"Заказ #{order.order_number}", "url": reverse("orders:order_detail", kwargs={"order_number": order.order_number})},
+            {"title": "Оплата успешна", "url": None},
+        ],
     }
     return render(request, "payments/success.html", context)
 
@@ -55,6 +75,12 @@ def payment_cancel(request, order_number):
     context = {
         "order": order,
         "title": _("Оплата отменена"),
+        "breadcrumbs": [
+            {"title": "Главная", "url": reverse("core:home")},
+            {"title": "Мои заказы", "url": reverse("orders:order_list")},
+            {"title": f"Заказ #{order.order_number}", "url": reverse("orders:order_detail", kwargs={"order_number": order.order_number})},
+            {"title": "Оплата отменена", "url": None},
+        ],
     }
     return render(request, "payments/cancel.html", context)
 

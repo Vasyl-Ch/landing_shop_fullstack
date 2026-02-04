@@ -1,6 +1,27 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+
+
+class CustomUserManager(UserManager):
+    """
+    Custom manager to ensure `createsuperuser` sets proper flags/role
+    when using email as USERNAME_FIELD.
+    """
+
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("role", User.Role.ADMIN)
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
+
+        return super().create_superuser(
+            username=username, email=email, password=password, **extra_fields
+        )
 
 
 class User(AbstractUser):
@@ -38,6 +59,8 @@ class User(AbstractUser):
         null=True,
     )
 
+    objects = CustomUserManager()
+
     # Override the USERNAME_FIELD for email login
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
@@ -53,16 +76,28 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         """
         Automatic role-based permissions.
+        Priority: explicit flags (is_superuser/is_staff) > role
         """
-        if self.role == self.Role.ADMIN:
+        # If flags are explicitly set (e.g. via `createsuperuser`),
+        # they have priority and role should follow them.
+        if self.is_superuser:
+            # Superuser always has admin role and staff status
+            self.role = self.Role.ADMIN
             self.is_staff = True
-            self.is_superuser = True
-        elif self.role == self.Role.STAFF:
-            self.is_staff = True
+        elif self.is_staff:
+            # Staff user but not superuser
+            if self.role != self.Role.ADMIN:
+                self.role = self.Role.STAFF
             self.is_superuser = False
         else:
-            self.is_staff = False
-            self.is_superuser = False
+            # Regular customer - only set role if not already admin/staff
+            if self.role not in (self.Role.ADMIN, self.Role.STAFF):
+                self.role = self.Role.CUSTOMER
+            # Don't override flags if they were explicitly set
+            # Only set to False if role is CUSTOMER
+            if self.role == self.Role.CUSTOMER:
+                self.is_staff = False
+                self.is_superuser = False
 
         super().save(*args, **kwargs)
 

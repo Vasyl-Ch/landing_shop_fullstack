@@ -33,15 +33,25 @@
                         {{ item.product.name }}
                     </a>
                     <div class="cart-item-price">
-                        Цена: ₽{{ item.price_at_addition|floatformat:0 }}
+                        Цена: ₽{{ item.price_at_addition|default:item.product.price|floatformat:0 }}
                     </div>
                     <div class="cart-item-category">
                         {{ item.product.category.name }}
                     </div>
+                    <div class="cart-item-stock">
+                        {% if item.product.stock > 0 %}
+                            <span class="stock-available">В наличии: {{ item.product.stock }} шт.</span>
+                            {% if item.quantity >= item.product.stock %}
+                                <span class="stock-limit">(максимум)</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="stock-unavailable">Нет в наличии</span>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <div class="cart-item-actions">
-                    <form method="POST" action="{% url 'cart:update' item.id %}" class="cart-update-form">
+                    <form method="POST" action="{% url 'cart:update_cart_item' item.id %}" class="cart-update-form">
                         {% csrf_token %}
                         <div class="quantity-input">
                             <button type="button" class="quantity-btn" data-action="decrease">−</button>
@@ -51,7 +61,7 @@
                                 class="quantity-value cart-quantity-input"
                                 value="{{ item.quantity }}"
                                 min="1"
-                                max="99"
+                                max="{{ item.product.stock }}"
                                 data-item-id="{{ item.id }}"
                             >
                             <button type="button" class="quantity-btn" data-action="increase">+</button>
@@ -63,7 +73,7 @@
                     ₽{{ item.get_total_price|floatformat:0 }}
                 </div>
 
-                <form method="POST" action="{% url 'cart:remove' item.id %}" style="display: inline;">
+                <form method="POST" action="{% url 'cart:remove_from_cart' item.id %}" style="display: inline;">
                     {% csrf_token %}
                     <button
                         type="submit"
@@ -94,10 +104,10 @@
             <div class="cart-summary-row">
                 <span class="cart-summary-label">Доставка:</span>
                 <span class="cart-summary-value" id="cartShipping">
-                    {% if total_price >= 3000 %}
+                    {% if shipping_cost == 0 %}
                         Бесплатно
                     {% else %}
-                        ₽500
+                        ₽{{ shipping_cost|floatformat:0 }}
                     {% endif %}
                 </span>
             </div>
@@ -105,17 +115,13 @@
             <div class="cart-summary-row cart-summary-total">
                 <span class="cart-summary-label">Итого:</span>
                 <span class="cart-summary-value" id="cartTotalPrice">
-                    {% if total_price >= 3000 %}
-                        ₽{{ total_price|floatformat:0 }}
-                    {% else %}
-                        ₽{{ total_price|add:500|floatformat:0 }}
-                    {% endif %}
+                    ₽{{ total_price|add:shipping_cost|floatformat:0 }}
                 </span>
             </div>
 
-            {% if total_price < 3000 %}
+            {% if remaining_for_free_shipping > 0 %}
             <p style="font-size: 0.875rem; color: var(--color-text-secondary); margin-top: var(--spacing-md);">
-                До бесплатной доставки: ₽{{ 3000|add:total_price|floatformat:0 }}
+                До бесплатной доставки: ₽{{ remaining_for_free_shipping|floatformat:0 }}
             </p>
             {% endif %}
 
@@ -130,7 +136,7 @@
         <a href="{% url 'products:product_list' %}" class="btn btn-link">
             ← Продолжить покупки
         </a>
-        <form method="POST" action="{% url 'cart:clear' %}" style="display: inline;">
+        <form method="POST" action="{% url 'cart:clear_cart' %}" style="display: inline;">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger btn-sm" id="clearCartBtn">
                 Очистить корзину

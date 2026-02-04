@@ -194,8 +194,11 @@ class MobileMenuManager {
     }
     
     toggle() {
-        // TODO: Implement mobile menu toggle
-        Toast.info('Мобильное меню - в разработке');
+        const headerNav = document.querySelector('.header-nav');
+        if (headerNav) {
+            headerNav.classList.toggle('mobile-open');
+            document.body.classList.toggle('menu-open');
+        }
     }
 }
 
@@ -440,12 +443,35 @@ window.Modal = Modal;
 // ========================================
 class API {
     static async request(url, options = {}) {
-        const csrfToken = this.getCookie('csrftoken');
+        // Try multiple methods to get CSRF token
+        let csrfToken = null;
+        
+        // Method 1: From cookie
+        csrfToken = this.getCookie('csrftoken');
+        
+        // Method 2: From meta tag
+        if (!csrfToken) {
+            const metaTag = document.querySelector('meta[name="csrf-token"]');
+            if (metaTag) {
+                csrfToken = metaTag.getAttribute('content');
+            }
+        }
+        
+        // Method 3: From hidden input
+        if (!csrfToken) {
+            const hiddenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (hiddenInput) {
+                csrfToken = hiddenInput.value;
+            }
+        }
+        
+        // Debug: Log CSRF token
+        console.log('CSRF Token:', csrfToken ? `${csrfToken.substring(0, 10)}...` : 'NOT FOUND');
         
         const defaultOptions = {
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
+                'X-CSRFToken': csrfToken || '',
             },
             credentials: 'same-origin',
         };
@@ -454,6 +480,19 @@ class API {
         
         try {
             const response = await fetch(url, config);
+            
+            // Handle CSRF error specifically
+            if (response.status === 403) {
+                const errorText = await response.text();
+                if (errorText.includes('CSRF verification failed')) {
+                    throw new Error('CSRF токен недействителен. Пожалуйста, перезагрузите страницу.');
+                }
+            }
+            
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") === -1) {
+                throw new Error('Сервер вернул HTML вместо JSON. Возможно, произошла ошибка.');
+            }
             const data = await response.json();
             
             if (!response.ok) {
@@ -566,9 +605,13 @@ document.addEventListener('DOMContentLoaded', () => {
     new SearchManager();
     new MobileMenuManager();
     
-    // Initialize quantity inputs
+    // Initialize quantity inputs ONLY for non-cart inputs
     document.querySelectorAll('.quantity-input').forEach(element => {
-        new QuantityInput(element);
+        const cartInput = element.querySelector('.cart-quantity-input');
+        if (!cartInput) {
+            // Only initialize QuantityInput for non-cart inputs
+            new QuantityInput(element);
+        }
     });
     
     // Show Django messages as toasts

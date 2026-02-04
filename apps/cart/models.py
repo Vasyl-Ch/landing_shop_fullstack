@@ -62,7 +62,11 @@ class Cart(models.Model):
 
     def get_total_price(self):
         """The total cost of all items in the cart."""
-        total = sum(item.get_total_price() for item in self.items.all())
+        total = 0
+        for item in self.items.all():
+            item_total = item.get_total_price()
+            if item_total is not None:
+                total += item_total
         return total
 
     def get_total_items(self):
@@ -118,6 +122,8 @@ class CartItem(models.Model):
         _("цена при добавлении"),
         max_digits=10,
         decimal_places=2,
+        null=True,
+        blank=True,
     )
 
     created_at = models.DateTimeField(_("добавлен"), auto_now_add=True)
@@ -145,7 +151,10 @@ class CartItem(models.Model):
         """The cost of this item (price × quantity)."""
         if self.price_at_addition is not None:
             return self.price_at_addition * self.quantity
-        return None
+        # Fallback to current product price if price_at_addition is None
+        if self.product and self.product.price is not None:
+            return self.product.price * self.quantity
+        return 0
 
     def increase_quantity(self, amount=1):
         """Increases the quantity of goods."""

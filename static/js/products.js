@@ -32,8 +32,8 @@ class ProductsPage {
      */
     async loadProducts() {
         try {
-            // In production, fetch from Django API
-            this.allProducts = this.getMockProducts();
+            const data = await API.get('/api/products/');
+            this.allProducts = data.products || [];
             this.filteredProducts = [...this.allProducts];
         } catch (error) {
             console.error('Failed to load products:', error);
@@ -426,30 +426,6 @@ class ProductsPage {
         }
     }
     
-    /**
-     * Get mock products (same as home page, but more)
-     */
-    getMockProducts() {
-        const baseProducts = [
-            { id: 1, name: 'iPhone 15 Pro', category: 'Телефоны', price: 119900, compare_price: 129900, image: 'https://images.unsplash.com/photo-1592286927505-dfd7d7a0e73c?w=400', stock: 15 },
-            { id: 2, name: 'AirPods Pro 2', category: 'Аксессуары', price: 27900, compare_price: null, image: 'https://images.unsplash.com/photo-1606841837239-c5a1a4a07af7?w=400', stock: 50 },
-            { id: 3, name: 'MacBook Pro 14"', category: 'Ноутбуки', price: 189900, compare_price: 209900, image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400', stock: 8 },
-            { id: 4, name: 'iPad Air', category: 'Планшеты', price: 64900, compare_price: null, image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400', stock: 20 },
-            { id: 5, name: 'Apple Watch Series 9', category: 'Часы', price: 42900, compare_price: 49900, image: 'https://images.unsplash.com/photo-1434494878577-86c23bcb06b9?w=400', stock: 12 },
-            { id: 6, name: 'Magic Keyboard', category: 'Аксессуары', price: 12900, compare_price: null, image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400', stock: 30 },
-            { id: 7, name: 'Nike Air Max', category: 'Обувь', price: 14990, compare_price: 19990, image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400', stock: 0 },
-            { id: 8, name: 'Sony WH-1000XM5', category: 'Наушники', price: 34900, compare_price: null, image: 'https://images.unsplash.com/photo-1545127398-14699f92334b?w=400', stock: 18 },
-            { id: 9, name: 'Samsung Galaxy S24', category: 'Телефоны', price: 89900, compare_price: null, image: 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=400', stock: 25 },
-            { id: 10, name: 'Dell XPS 15', category: 'Ноутбуки', price: 159900, compare_price: 179900, image: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=400', stock: 10 },
-            { id: 11, name: 'Adidas Ultraboost', category: 'Обувь', price: 17990, compare_price: null, image: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400', stock: 15 },
-            { id: 12, name: 'Kindle Paperwhite', category: 'Электроника', price: 14900, compare_price: null, image: 'https://images.unsplash.com/photo-1592496431122-2349e0fbc666?w=400', stock: 40 },
-            { id: 13, name: 'Canon EOS R6', category: 'Камеры', price: 259900, compare_price: 289900, image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400', stock: 5 },
-            { id: 14, name: 'JBL Flip 6', category: 'Аксессуары', price: 12990, compare_price: null, image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400', stock: 35 },
-            { id: 15, name: 'Asus ROG Gaming Mouse', category: 'Аксессуары', price: 8990, compare_price: 10990, image: 'https://images.unsplash.com/photo-1527814050087-3793815479db?w=400', stock: 50 },
-        ];
-        
-        return baseProducts;
-    }
 }
 
 // ========================================

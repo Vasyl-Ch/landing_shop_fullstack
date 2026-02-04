@@ -92,6 +92,15 @@ class Category(models.Model):
             children.extend(child.get_all_children())
         return children
 
+    def get_parent_chain(self):
+        """Returns a list of parent categories in hierarchical order."""
+        parents = []
+        current = self.parent
+        while current:
+            parents.append(current)
+            current = current.parent
+        return parents
+
 
 class Product(models.Model):
     """

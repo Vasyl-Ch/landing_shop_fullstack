@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.translation import gettext as _
 from django.db import transaction
+from django.urls import reverse
 from apps.orders.models import Order
 from apps.orders.utils import create_order_from_cart
 from apps.payments.services import StripeService
@@ -31,16 +32,16 @@ class CheckoutView(View):
             profile = user.profile
 
             initial_data = {
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "phone": user.phone,
-                "address_line1": profile.address_line1,
-                "address_line2": profile.address_line2,
-                "city": profile.city,
-                "state": profile.state,
-                "postal_code": profile.postal_code,
-                "country": profile.country,
+                "email": user.email or "",
+                "first_name": user.first_name or "",
+                "last_name": user.last_name or "",
+                "phone": user.phone or "",
+                "address_line1": profile.address_line1 or "",
+                "address_line2": profile.address_line2 or "",
+                "city": profile.city or "",
+                "state": profile.state or "",
+                "postal_code": profile.postal_code or "",
+                "country": profile.country or "Страна не определена",
             }
 
         context = {
@@ -49,6 +50,11 @@ class CheckoutView(View):
             "cart_items": cart.items.select_related("product").all(),
             "total_price": cart.get_total_price(),
             "initial_data": initial_data,
+            "breadcrumbs": [
+                {"title": "Главная", "url": reverse("core:home")},
+                {"title": "Корзина", "url": reverse("cart:cart_detail")},
+                {"title": "Оформление заказа", "url": None},
+            ],
         }
 
         return render(request, self.template_name, context)
@@ -123,6 +129,10 @@ class OrderListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = "Мои заказы"
+        context["breadcrumbs"] = [
+            {"title": "Главная", "url": reverse("core:home")},
+            {"title": "Мои заказы", "url": None},
+        ]
         return context
 
 
@@ -156,6 +166,23 @@ class OrderDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = f"Заказ #{self.object.order_number}"
+        context["breadcrumbs"] = [
+            {"title": "Главная", "url": reverse("core:home")},
+            {"title": "Мои заказы", "url": reverse("orders:order_list")},
+            {"title": f"Заказ #{self.object.order_number}", "url": None},
+        ]
+        
+        # Check payment status if order has Stripe session
+        if self.object.stripe_checkout_session_id and self.object.status == Order.Status.PENDING:
+            try:
+                from apps.payments.services import StripeService
+                session = StripeService.retrieve_checkout_session(self.object.stripe_checkout_session_id)
+                if session.payment_status == 'paid':
+                    self.object.mark_as_paid()
+                    context["payment_just_updated"] = True
+            except Exception:
+                pass  # Silently fail, webhook will handle it
+        
         return context
 
 

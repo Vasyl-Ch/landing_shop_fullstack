@@ -25,6 +25,4 @@ urlpatterns = [
     path("ajax/update/", views.CartAjaxUpdateView.as_view(), name="ajax_update"),
     path("ajax/remove/", views.CartAjaxRemoveView.as_view(), name="ajax_remove"),
     path("ajax/clear/", views.CartAjaxClearView.as_view(), name="ajax_clear"),
-    # Старый AJAX endpoint (для совместимости)
-    path("ajax/update/", views.CartUpdateAjaxView.as_view(), name="cart_update_ajax"),
 ]

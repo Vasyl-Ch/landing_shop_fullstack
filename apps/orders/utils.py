@@ -12,12 +12,14 @@ def calculate_shipping_cost(order_data):
     - By delivery address
     - By order amount (free delivery from X rubles)
 
-    So far, we are returning a fixed amount.
+    Free shipping for orders >= 1000 rubles, otherwise 500 rubles.
     """
     subtotal = order_data.get("subtotal", 0)
-    if subtotal >= 30:
+    if isinstance(subtotal, Decimal):
+        subtotal = float(subtotal)
+    if subtotal >= 1000:
         return Decimal("0.00")
-    return Decimal("5.00")
+    return Decimal("500.00")
 
 
 @transaction.atomic

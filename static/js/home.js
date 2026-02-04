@@ -23,9 +23,8 @@ class HomePage {
         if (!container) return;
         
         try {
-            // In production, this would call your Django API
-            // For now, we'll use mock data
-            const products = this.getMockProducts(8);
+            const data = await API.get('/api/products/featured/');
+            const products = data.products || [];
             
             container.innerHTML = '';
             products.forEach(product => {
@@ -45,7 +44,8 @@ class HomePage {
         if (!container) return;
         
         try {
-            const products = this.getMockProducts(8);
+            const data = await API.get('/api/products/new-arrivals/');
+            const products = data.products || [];
             
             container.innerHTML = '';
             products.forEach(product => {
@@ -65,7 +65,8 @@ class HomePage {
         if (!container) return;
         
         try {
-            const categories = this.getMockCategories();
+            const data = await API.get('/api/categories/');
+            const categories = data.categories || [];
             
             container.innerHTML = '';
             categories.forEach(category => {
@@ -85,7 +86,8 @@ class HomePage {
         if (!menu) return;
         
         try {
-            const categories = this.getMockCategories();
+            const data = await API.get('/api/categories/');
+            const categories = data.categories || [];
             
             menu.innerHTML = '';
             categories.forEach(category => {
@@ -224,140 +226,6 @@ class HomePage {
         return card;
     }
     
-    /**
-     * Get mock products for demonstration
-     * In production, replace with actual API call to Django backend
-     */
-    getMockProducts(count = 8) {
-        const products = [
-            {
-                id: 1,
-                name: 'iPhone 15 Pro',
-                slug: 'iphone-15-pro',
-                category: 'Телефоны',
-                price: 119900,
-                compare_price: 129900,
-                image: 'https://images.unsplash.com/photo-1592286927505-dfd7d7a0e73c?w=400&h=400&fit=crop',
-                stock: 15
-            },
-            {
-                id: 2,
-                name: 'AirPods Pro 2',
-                slug: 'airpods-pro-2',
-                category: 'Аксессуары',
-                price: 27900,
-                compare_price: null,
-                image: 'https://images.unsplash.com/photo-1606841837239-c5a1a4a07af7?w=400&h=400&fit=crop',
-                stock: 50
-            },
-            {
-                id: 3,
-                name: 'MacBook Pro 14"',
-                slug: 'macbook-pro-14',
-                category: 'Ноутбуки',
-                price: 189900,
-                compare_price: 209900,
-                image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=400&fit=crop',
-                stock: 8
-            },
-            {
-                id: 4,
-                name: 'iPad Air',
-                slug: 'ipad-air',
-                category: 'Планшеты',
-                price: 64900,
-                compare_price: null,
-                image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop',
-                stock: 20
-            },
-            {
-                id: 5,
-                name: 'Apple Watch Series 9',
-                slug: 'apple-watch-9',
-                category: 'Часы',
-                price: 42900,
-                compare_price: 49900,
-                image: 'https://images.unsplash.com/photo-1434494878577-86c23bcb06b9?w=400&h=400&fit=crop',
-                stock: 12
-            },
-            {
-                id: 6,
-                name: 'Magic Keyboard',
-                slug: 'magic-keyboard',
-                category: 'Аксессуары',
-                price: 12900,
-                compare_price: null,
-                image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400&h=400&fit=crop',
-                stock: 30
-            },
-            {
-                id: 7,
-                name: 'Nike Air Max',
-                slug: 'nike-air-max',
-                category: 'Обувь',
-                price: 14990,
-                compare_price: 19990,
-                image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop',
-                stock: 0
-            },
-            {
-                id: 8,
-                name: 'Sony WH-1000XM5',
-                slug: 'sony-wh-1000xm5',
-                category: 'Наушники',
-                price: 34900,
-                compare_price: null,
-                image: 'https://images.unsplash.com/photo-1545127398-14699f92334b?w=400&h=400&fit=crop',
-                stock: 18
-            }
-        ];
-        
-        return products.slice(0, count);
-    }
-    
-    /**
-     * Get mock categories for demonstration
-     */
-    getMockCategories() {
-        return [
-            {
-                id: 1,
-                name: 'Электроника',
-                slug: 'electronics',
-                image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400&h=300&fit=crop'
-            },
-            {
-                id: 2,
-                name: 'Одежда',
-                slug: 'clothing',
-                image: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400&h=300&fit=crop'
-            },
-            {
-                id: 3,
-                name: 'Дом и сад',
-                slug: 'home-garden',
-                image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400&h=300&fit=crop'
-            },
-            {
-                id: 4,
-                name: 'Спорт',
-                slug: 'sports',
-                image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=300&fit=crop'
-            },
-            {
-                id: 5,
-                name: 'Книги',
-                slug: 'books',
-                image: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=400&h=300&fit=crop'
-            },
-            {
-                id: 6,
-                name: 'Игрушки',
-                slug: 'toys',
-                image: 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=400&h=300&fit=crop'
-            }
-        ];
-    }
 }
 
 // ========================================

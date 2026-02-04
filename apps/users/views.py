@@ -5,7 +5,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.utils.translation import gettext_lazy
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.conf import settings
 from apps.users.models import User, UserProfile
 from apps.cart.models import Cart
@@ -28,8 +28,8 @@ class RegisterView(View):
     def post(self, request):
         email = request.POST.get("email")
         username = request.POST.get("username")
-        password1 = request.POST.get("password1")  # Изменено с "password"
-        password2 = request.POST.get("password2")  # Изменено с "password_confirm"
+        password1 = request.POST.get("password1")
+        password2 = request.POST.get("password2")
         first_name = request.POST.get("first_name", "")
         last_name = request.POST.get("last_name", "")
         phone = request.POST.get("phone", "")
@@ -165,6 +165,10 @@ class ProfileView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = "Мой профиль"
+        context["breadcrumbs"] = [
+            {"title": "Главная", "url": reverse("core:home")},
+            {"title": "Мой профиль", "url": None},
+        ]
 
         context["recent_orders"] = self.request.user.orders.prefetch_related(
             "items__product"
@@ -198,11 +202,20 @@ class ProfileEditView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = "Редактировать профиль"
+        context["breadcrumbs"] = [
+            {"title": "Главная", "url": reverse("core:home")},
+            {"title": "Мой профиль", "url": reverse("users:profile")},
+            {"title": "Редактировать профиль", "url": None},
+        ]
         return context
 
     def form_valid(self, form):
         messages.success(self.request, gettext_lazy("Профиль успешно обновлён"))
         return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Пожалуйста, исправьте ошибки в форме")
+        return super().form_invalid(form)
 
 
 class AccountSettingsView(LoginRequiredMixin, View):
@@ -213,7 +226,14 @@ class AccountSettingsView(LoginRequiredMixin, View):
     template_name = "users/account_settings.html"
 
     def get(self, request):
-        context = {"title": "Настройки аккаунта"}
+        context = {
+            "title": "Настройки аккаунта",
+            "breadcrumbs": [
+                {"title": "Главная", "url": reverse("core:home")},
+                {"title": "Мой профиль", "url": reverse("users:profile")},
+                {"title": "Настройки аккаунта", "url": None},
+            ],
+        }
         return render(request, self.template_name, context)
 
     def post(self, request):
@@ -228,9 +248,9 @@ class AccountSettingsView(LoginRequiredMixin, View):
             messages.success(request, gettext_lazy("Личные данные обновлены"))
 
         elif action == "change_password":
-            old_password = request.POST.get("old_password")
-            new_password = request.POST.get("new_password")
-            new_password_confirm = request.POST.get("new_password_confirm")
+            old_password = request.POST.get("current_password")
+            new_password = request.POST.get("new_password1")
+            new_password_confirm = request.POST.get("new_password2")
 
             if not request.user.check_password(old_password):
                 messages.error(request, gettext_lazy("Неверный текущий пароль"))

@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import ListView, DetailView
 from django.db.models import Q, Prefetch
+from django.urls import reverse
 from apps.products.models import Product, Category, ProductImage
 from django.core.paginator import Paginator
 
@@ -44,6 +45,10 @@ class ProductListView(ListView):
         context["search_query"] = self.request.GET.get("q", "")
         context["current_sort"] = self.request.GET.get("sort", "-created_at")
         context["categories"] = Category.objects.filter(is_active=True)
+        context["breadcrumbs"] = [
+            {"title": "Главная", "url": reverse("core:home")},
+            {"title": "Каталог товаров", "url": None},
+        ]
         return context
 
 
@@ -80,6 +85,13 @@ class ProductDetailView(DetailView):
             .exclude(id=product.id)
             .select_related("category")[:4]
         )
+
+        context["breadcrumbs"] = [
+            {"title": "Главная", "url": reverse("core:home")},
+            {"title": "Каталог товаров", "url": reverse("products:product_list")},
+            {"title": product.category.name if product.category else "Товар", "url": reverse("products:category_detail", kwargs={"slug": product.category.slug}) if product.category else None},
+            {"title": product.name, "url": None},
+        ]
 
         return context
 
@@ -135,6 +147,19 @@ class CategoryDetailView(DetailView):
         context["is_paginated"] = page_obj.has_other_pages()
         context["title"] = category.name
         context["current_sort"] = sort_by
+        
+        # Build breadcrumbs for category with parent hierarchy
+        breadcrumbs = [{"title": "Главная", "url": reverse("core:home")}]
+        
+        # Add parent categories if they exist
+        if category.parent:
+            parent_chain = category.get_parent_chain()
+            # Reverse to show from root to immediate parent
+            for parent in reversed(parent_chain):
+                breadcrumbs.append({"title": parent.name, "url": reverse("products:category_detail", kwargs={"slug": parent.slug})})
+        
+        breadcrumbs.append({"title": category.name, "url": None})
+        context["breadcrumbs"] = breadcrumbs
 
         return context
 
@@ -172,4 +197,9 @@ class SearchView(ListView):
         context["title"] = f'Результаты поиска: "{query}"'
         context["search_query"] = query
         context["total_results"] = self.get_queryset().count()
+        context["breadcrumbs"] = [
+            {"title": "Главная", "url": reverse("core:home")},
+            {"title": "Каталог товаров", "url": reverse("products:product_list")},
+            {"title": f'Результаты поиска: "{query}"', "url": None},
+        ]
         return context

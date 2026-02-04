@@ -55,7 +55,7 @@
             <div class="product-availability">
                 <div class="availability-status {% if product.is_in_stock %}in-stock{% else %}out-of-stock{% endif %}">
                     {% if product.is_in_stock %}
-                        ✓ В наличии
+                        ✓ В наличии: <strong>{{ product.stock }} шт.</strong>
                     {% elif product.allow_backorder %}
                         ⚠ Предзаказ
                     {% else %}
@@ -71,7 +71,7 @@
                     <label for="quantity">Количество:</label>
                     <div class="quantity-input">
                         <button type="button" class="quantity-btn" data-action="decrease">−</button>
-                        <input type="number" name="quantity" class="quantity-value" value="1" min="1" max="99" id="quantity">
+                        <input type="number" name="quantity" class="quantity-value" value="1" min="1" max="{{ product.stock }}" id="quantity">
                         <button type="button" class="quantity-btn" data-action="increase">+</button>
                     </div>
                 </div>

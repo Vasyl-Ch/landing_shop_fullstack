@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.views.generic import TemplateView
+from django.urls import reverse
 from apps.products.models import Product, Category
 
 
@@ -39,6 +40,10 @@ class AboutView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = "О нас"
+        context["breadcrumbs"] = [
+            {"title": "Главная", "url": reverse("core:home")},
+            {"title": "О нас", "url": None},
+        ]
         return context
 
 
@@ -50,4 +55,8 @@ class ContactView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = "Контакты"
+        context["breadcrumbs"] = [
+            {"title": "Главная", "url": reverse("core:home")},
+            {"title": "Контакты", "url": None},
+        ]
         return context

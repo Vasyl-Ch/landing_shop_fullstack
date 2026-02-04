@@ -4,9 +4,9 @@ import stripe
 from django.conf import settings
 from django.urls import reverse
 from decimal import Decimal
+from decouple import config
 
-
-stripe.api_key = settings.STRIPE_SECRET_KEY
+stripe.api_key = config('STRIPE_SECRET_KEY')
 
 
 class StripeService:
@@ -105,7 +105,7 @@ class StripeService:
         Returns: Stripe Event object
         Raises: ValueError, stripe.error.SignatureVerificationError
         """
-        webhook_secret = settings.STRIPE_WEBHOOK_SECRET
+        webhook_secret = config('STRIPE_WEBHOOK_SECRET')
 
         try:
             event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)

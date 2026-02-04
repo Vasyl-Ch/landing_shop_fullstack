@@ -4,6 +4,8 @@ from django.views.generic import TemplateView
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils.translation import gettext as _
+from django.urls import reverse
+from apps.orders.utils import calculate_shipping_cost
 from django.views.decorators.http import require_http_methods
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -29,8 +31,20 @@ class CartDetailView(TemplateView):
         context["cart_items"] = cart.items.select_related("product").all()
         context["total_price"] = cart.get_total_price()
         context["total_items"] = cart.get_total_items()
+        
+        # Calculate shipping cost
+        free_shipping_threshold = 1000
+        shipping_cost = 0 if context["total_price"] >= free_shipping_threshold else 500
+        context["shipping_cost"] = shipping_cost
+        
+        # Calculate remaining amount for free shipping
+        if context["total_price"] < free_shipping_threshold:
+            context["remaining_for_free_shipping"] = free_shipping_threshold - context["total_price"]
+        else:
+            context["remaining_for_free_shipping"] = 0
+        
         context["breadcrumbs"] = [
-            {"title": "Главная", "url": "/"},
+            {"title": "Главная", "url": reverse("core:home")},
             {"title": "Корзина", "url": None},
         ]
 
@@ -54,8 +68,24 @@ class AddToCartView(View):
         if quantity < 1:
             quantity = 1
 
+        # Проверяем остатки на складе
+        current_stock = product.stock
+        existing_cart_item = CartItem.objects.filter(cart=cart, product=product).first()
+        current_cart_quantity = existing_cart_item.quantity if existing_cart_item else 0
+        total_requested_quantity = current_cart_quantity + quantity
+
+        if total_requested_quantity > current_stock:
+            messages.error(
+                request, 
+                _(f"Недостаточно товара на складе. Доступно: {current_stock} шт., в корзине: {current_cart_quantity} шт.")
+            )
+            return redirect("products:product_detail", slug=product.slug)
+
         cart_item, created = CartItem.objects.get_or_create(
-            cart=cart, product=product, defaults={"quantity": quantity}
+            cart=cart, product=product, defaults={
+                "quantity": quantity,
+                "price_at_addition": product.price,
+            }
         )
 
         if not created:
@@ -86,8 +116,13 @@ class UpdateCartItemView(View):
         quantity = request.POST.get("quantity")
 
         if action == "increase":
-            cart_item.increase_quantity(1)
-            messages.success(request, _("Количество товара увеличено"))
+            # Проверяем остатки перед увеличением
+            current_stock = cart_item.product.stock
+            if cart_item.quantity >= current_stock:
+                messages.warning(request, _(f"Достигнуто максимальное количество. Доступно: {current_stock} шт."))
+            else:
+                cart_item.increase_quantity(1)
+                messages.success(request, _("Количество товара увеличено"))
         elif action == "decrease":
             if cart_item.quantity > 1:
                 cart_item.decrease_quantity(1)
@@ -98,9 +133,14 @@ class UpdateCartItemView(View):
             try:
                 new_quantity = int(quantity)
                 if new_quantity > 0:
-                    cart_item.quantity = new_quantity
-                    cart_item.save()
-                    messages.success(request, _("Количество товара обновлено"))
+                    # Проверяем остатки
+                    current_stock = cart_item.product.stock
+                    if new_quantity > current_stock:
+                        messages.error(request, _(f"Недостаточно товара на складе. Доступно: {current_stock} шт."))
+                    else:
+                        cart_item.quantity = new_quantity
+                        cart_item.save()
+                        messages.success(request, _("Количество товара обновлено"))
                 else:
                     messages.error(request, _("Неверное количество"))
             except ValueError:
@@ -136,45 +176,6 @@ class ClearCartView(View):
         return redirect("cart:cart_detail")
 
 
-class CartUpdateAjaxView(View):
-    """
-    AJAX endpoint for cart updates.
-    Returns JSON with updated cart data.
-    """
-
-    def post(self, request):
-        cart = request.cart
-        action = request.POST.get("action")
-        item_id = request.POST.get("item_id")
-
-        try:
-            if action in ["increase", "decrease", "remove"]:
-                cart_item = get_object_or_404(CartItem, id=item_id, cart=cart)
-
-                if action == "increase":
-                    cart_item.increase_quantity(1)
-                elif action == "decrease":
-                    if cart_item.quantity > 1:
-                        cart_item.decrease_quantity(1)
-                    else:
-                        return JsonResponse(
-                            {"success": False, "error": "Минимальное количество - 1"}
-                        )
-                elif action == "remove":
-                    cart_item.delete()
-
-            return JsonResponse(
-                {
-                    "success": True,
-                    "cart_total": float(cart.get_total_price()),
-                    "cart_items_count": cart.get_total_items(),
-                }
-            )
-
-        except Exception as e:
-            return JsonResponse({"success": False, "error": str(e)})
-
-
 class CartAjaxGetView(View):
     """
     AJAX: Get cart data.
@@ -191,6 +192,8 @@ class CartAjaxGetView(View):
                         "success": True,
                         "cart_items_count": 0,
                         "cart_total": 0.0,
+                        "subtotal": 0.0,
+                        "shipping_cost": 0.0,
                         "items": [],
                     }
                 )
@@ -203,8 +206,10 @@ class CartAjaxGetView(View):
                         "product_id": item.product.id,
                         "product_name": item.product.name,
                         "product_slug": item.product.slug,
+                        "product_category": item.product.category.name if item.product.category else None,
                         "quantity": item.quantity,
                         "price": float(item.price_at_addition or item.product.price),
+                        "price_at_addition": float(item.price_at_addition) if item.price_at_addition else float(item.product.price),
                         "total_price": float(item.get_total_price()),
                         "image_url": (
                             item.product.image.url if item.product.image else None
@@ -212,11 +217,16 @@ class CartAjaxGetView(View):
                     }
                 )
 
+            subtotal = cart.get_total_price()
+            shipping_cost = calculate_shipping_cost({"subtotal": subtotal})
+
             return JsonResponse(
                 {
                     "success": True,
                     "cart_items_count": cart.get_total_items(),
-                    "cart_total": float(cart.get_total_price()),
+                    "cart_total": float(subtotal),
+                    "subtotal": float(subtotal),
+                    "shipping_cost": float(shipping_cost),
                     "items": items,
                 }
             )
@@ -230,6 +240,10 @@ class CartAjaxAddView(View):
     AJAX: Add product to cart.
     Returns JSON with updated cart data.
     """
+
+    @method_decorator(csrf_exempt)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def post(self, request):
         try:
@@ -260,6 +274,21 @@ class CartAjaxAddView(View):
                     status=400,
                 )
 
+            # Проверяем остатки на складе
+            current_stock = product.stock
+            existing_cart_item = CartItem.objects.filter(cart=request.cart, product=product).first()
+            current_cart_quantity = existing_cart_item.quantity if existing_cart_item else 0
+            total_requested_quantity = current_cart_quantity + quantity
+
+            if total_requested_quantity > current_stock:
+                return JsonResponse(
+                    {
+                        "success": False, 
+                        "message": f"Недостаточно товара на складе. Доступно: {current_stock} шт., в корзине: {current_cart_quantity} шт."
+                    },
+                    status=400,
+                )
+
             cart = request.cart
 
             cart_item, created = CartItem.objects.get_or_create(
@@ -275,12 +304,17 @@ class CartAjaxAddView(View):
                 cart_item.quantity += quantity
                 cart_item.save()
 
+            subtotal = cart.get_total_price()
+            shipping_cost = calculate_shipping_cost({"subtotal": subtotal})
+
             return JsonResponse(
                 {
                     "success": True,
                     "message": f"{product.name} добавлен в корзину",
                     "cart_items_count": cart.get_total_items(),
-                    "cart_total": float(cart.get_total_price()),
+                    "cart_total": float(subtotal),
+                    "subtotal": float(subtotal),
+                    "shipping_cost": float(shipping_cost),
                 }
             )
 
@@ -293,6 +327,10 @@ class CartAjaxUpdateView(View):
     AJAX: Update cart item quantity.
     Returns JSON with updated cart data.
     """
+
+    @method_decorator(csrf_exempt)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def post(self, request):
         try:
@@ -319,16 +357,39 @@ class CartAjaxUpdateView(View):
 
             try:
                 cart_item = CartItem.objects.get(id=item_id, cart=cart)
+                
+                # Проверяем остатки на складе
+                current_stock = cart_item.product.stock
+                if quantity > current_stock:
+                    return JsonResponse(
+                        {
+                            "success": False, 
+                            "message": f"Недостаточно товара на складе. Доступно: {current_stock} шт."
+                        },
+                        status=400,
+                    )
+                
                 cart_item.quantity = quantity
                 cart_item.save()
+
+                subtotal = cart.get_total_price()
+                shipping_cost = calculate_shipping_cost({"subtotal": subtotal})
 
                 return JsonResponse(
                     {
                         "success": True,
                         "message": "Количество обновлено",
                         "cart_items_count": cart.get_total_items(),
-                        "cart_total": float(cart.get_total_price()),
+                        "cart_total": float(subtotal),
+                        "subtotal": float(subtotal),
+                        "shipping_cost": float(shipping_cost),
                         "item_total": float(cart_item.get_total_price()),
+                        "items": [
+                            {
+                                "id": cart_item.id,
+                                "total_price": float(cart_item.get_total_price()),
+                            }
+                        ],
                     }
                 )
             except CartItem.DoesNotExist:
@@ -346,6 +407,10 @@ class CartAjaxRemoveView(View):
     AJAX: Remove item from cart.
     Returns JSON with updated cart data.
     """
+
+    @method_decorator(csrf_exempt)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def post(self, request):
         try:
@@ -368,12 +433,17 @@ class CartAjaxRemoveView(View):
                 product_name = cart_item.product.name
                 cart_item.delete()
 
+                subtotal = cart.get_total_price()
+                shipping_cost = calculate_shipping_cost({"subtotal": subtotal})
+
                 return JsonResponse(
                     {
                         "success": True,
                         "message": f"{product_name} удален из корзины",
                         "cart_items_count": cart.get_total_items(),
-                        "cart_total": float(cart.get_total_price()),
+                        "cart_total": float(subtotal),
+                        "subtotal": float(subtotal),
+                        "shipping_cost": float(shipping_cost),
                     }
                 )
             except CartItem.DoesNotExist:
@@ -392,6 +462,10 @@ class CartAjaxClearView(View):
     Returns JSON confirmation.
     """
 
+    @method_decorator(csrf_exempt)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
     def post(self, request):
         try:
             cart = request.cart
@@ -405,6 +479,8 @@ class CartAjaxClearView(View):
                     "message": "Корзина очищена",
                     "cart_items_count": 0,
                     "cart_total": 0.0,
+                    "subtotal": 0.0,
+                    "shipping_cost": 0.0,
                 }
             )
 
